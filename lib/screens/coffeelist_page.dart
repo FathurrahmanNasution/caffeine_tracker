@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class CoffeeListPage extends StatelessWidget {
   const CoffeeListPage({super.key});
 
-  // 🔥 List data minuman
+  //List data minuman
   final List<Map<String, String>> coffeeList = const [
     {
       "name": "Espresso",
@@ -90,15 +90,15 @@ class CoffeeListPage extends StatelessWidget {
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.5),
+                    fillColor: Colors.white54,
                     contentPadding: const EdgeInsets.only(left: 40, right: 16),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide(color: const Color(0xFF5D3A00).withOpacity(0.5)),
+                      borderSide: const BorderSide(color: Color.fromRGBO(93, 58, 0, 0.5)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide(color: const Color(0xFF5D3A00).withOpacity(0.5)),
+                      borderSide: const BorderSide(color: Color.fromRGBO(93, 58, 0, 0.5)),
                     ),
                   ),
                 ),
@@ -122,7 +122,7 @@ class CoffeeListPage extends StatelessWidget {
 
             const SizedBox(height: 20),
             SizedBox( //
-              height: 220, // fix height untuk card favorit
+              height: 220,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: coffeeList.length,
@@ -158,20 +158,63 @@ class CoffeeListPage extends StatelessWidget {
 
             const SizedBox(height: 20),
             Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 0.60,
-                  mainAxisSpacing: 15,
-                  crossAxisSpacing: 5,
-                ),
-                itemCount: coffeeList.length,
-                itemBuilder: (context, index) {
-                  final coffee = coffeeList[index];
-                  return _buildCoffeeCard(coffee["name"]!, coffee["image"]!, coffee["desc"]!);
-                },
+              child: Stack(
+                children: [
+                  // GridView tetap full dan bisa scroll
+                  GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 0.60,
+                      mainAxisSpacing: 15,
+                      crossAxisSpacing: 5,
+                    ),
+                    itemCount: coffeeList.length,
+                    itemBuilder: (context, index) {
+                      final coffee = coffeeList[index];
+                      return _buildCoffeeCard(
+                        coffee["name"]!,
+                        coffee["image"]!,
+                        coffee["desc"]!,
+                      );
+                    },
+                  ),
+
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4E8D7C),
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                      ),
+                      onPressed: () {
+                        debugPrint("Add Others clicked");
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Text(
+                            "Add Others",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 6), // jarak antara teks dan ikon
+                          Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -212,11 +255,11 @@ class CoffeeListPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white70,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: const Color.fromRGBO(0, 0, 0, 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -225,7 +268,6 @@ class CoffeeListPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar kecil + love opsional
           SizedBox(
             height: 145,
             child: Stack(
@@ -282,7 +324,7 @@ class CoffeeListPage extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8, bottom: 0, top: 5),
               child: Icon(
                 Icons.add_circle_outline,
-                size: 24, // bisa sesuaikan biar mirip ukuran sebelumnya
+                size: 24,
                 color: Color(0xFF4E8D7C),
               ),
             ),
