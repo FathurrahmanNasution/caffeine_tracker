@@ -69,7 +69,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               color: Colors.brown,
               child: TextButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/tracker');
+                  Navigator.pushReplacementNamed(context, '/coffeelist');
                 },
                 child: const Text(
                   "Get Started",
