@@ -3,32 +3,20 @@ import 'package:flutter/material.dart';
 class CoffeeListPage extends StatelessWidget {
   const CoffeeListPage({super.key});
 
-  //List data minuman
+  // List data minuman
   final List<Map<String, String>> coffeeList = const [
-    {
-      "name": "Espresso",
-      "image": "assets/images/coffee.png",
-      "desc": "2.1 mg per mL",
-    },
-    {
-      "name": "Americano",
-      "image": "assets/images/coffee.png",
-      "desc": "1.9 mg per mL",
-    },
-    {
-      "name": "Latte",
-      "image": "assets/images/coffee.png",
-      "desc": "1.2 mg per mL",
-    },
-    {
-      "name": "Cappuccino",
-      "image": "assets/images/coffee.png",
-      "desc": "1.5 mg per mL",
-    },
+    {"name": "Espresso", "image": "assets/images/coffee.png", "desc": "2.1 mg per mL"},
+    {"name": "Americano", "image": "assets/images/coffee.png", "desc": "1.9 mg per mL"},
+    {"name": "Latte", "image": "assets/images/coffee.png", "desc": "1.2 mg per mL"},
+    {"name": "Cappuccino", "image": "assets/images/coffee.png", "desc": "1.5 mg per mL"},
   ];
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size; // ambil ukuran layar
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       appBar: PreferredSize(
@@ -38,10 +26,7 @@ class CoffeeListPage extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
           title: GestureDetector(
-            child: Image.asset(
-              "assets/images/coffee.png",
-              height: 52,
-            ),
+            child: Image.asset("assets/images/coffee.png", height: height * 0.06),
           ),
           actions: [
             Padding(
@@ -50,9 +35,7 @@ class CoffeeListPage extends StatelessWidget {
                 icon: const CircleAvatar(
                   backgroundImage: AssetImage("assets/images/profile.png"),
                 ),
-                onPressed: () {
-                  // Aksi saat ikon ditekan
-                },
+                onPressed: () {},
               ),
             ),
           ],
@@ -60,34 +43,29 @@ class CoffeeListPage extends StatelessWidget {
       ),
 
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(width * 0.04), // padding fleksibel
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 30),
+            SizedBox(height: height * 0.03),
 
             // 🔍 Search bar
             Align(
               alignment: Alignment.center,
               child: SizedBox(
-                width: 380,
+                width: width * 0.9, // fleksibel
                 child: TextField(
                   style: const TextStyle(color: Color(0xFF5D3A00)),
                   decoration: InputDecoration(
                     hintText: "Search your drinks...",
                     hintStyle: const TextStyle(color: Color(0xFF6E3D2C)),
                     prefixIcon: Container(
-                      margin: const EdgeInsets.all(0),
                       decoration: BoxDecoration(
                         border: Border.all(color: const Color(0xFFA67C52)),
                         color: const Color(0xFFD5BBA2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.search,
-                        color: Color(0xFF6E3D2C),
-                        size: 28,
-                      ),
+                      child: const Icon(Icons.search, color: Color(0xFF6E3D2C), size: 24),
                     ),
                     filled: true,
                     fillColor: Colors.white54,
@@ -105,79 +83,55 @@ class CoffeeListPage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 40),
+            SizedBox(height: height * 0.04),
 
             // Favorites section
             const Padding(
-              padding: EdgeInsets.only(left: 16),
-              child: Text(
-                "Your Favorites",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF6E3D2C),
-                ),
-              ),
+              padding: EdgeInsets.only(left: 8),
+              child: Text("Your Favorites",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF6E3D2C))),
             ),
 
-            const SizedBox(height: 20),
-            SizedBox( //
-              height: 234,
+            SizedBox(height: height * 0.02),
+            SizedBox(
+              height: height * 0.23, // responsif
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: coffeeList.length,
                 itemBuilder: (context, index) {
                   final coffee = coffeeList[index];
                   return SizedBox(
-                    width: MediaQuery.of(context).size.width / 3 - 12,
-                    child: _buildCoffeeCard(
-                      context,
-                      coffee["name"]!,
-                      coffee["image"]!,
-                      coffee["desc"]!,
-                      showLove: true,
-                    ),
+                    width: width * 0.3, // responsif
+                    child: _buildCoffeeCard(context, coffee["name"]!, coffee["image"]!, coffee["desc"]!, showLove: true),
                   );
                 },
               ),
             ),
 
-            const SizedBox(height: 30),
+            SizedBox(height: height * 0.03),
 
             // All Drinks section
             const Padding(
-              padding: EdgeInsets.only(left: 16),
-              child: Text(
-                "All Drinks",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF6E3D2C),
-                ),
-              ),
+              padding: EdgeInsets.only(left: 8),
+              child: Text("All Drinks",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF6E3D2C))),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: height * 0.02),
             Expanded(
               child: Stack(
                 children: [
-                  // GridView tetap full dan bisa scroll
                   GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: width < 360 ? 2 : 3, // kalau layar kecil jadi 2 kolom
                       childAspectRatio: 0.58,
-                      mainAxisSpacing: 15,
-                      crossAxisSpacing: 5,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 8,
                     ),
                     itemCount: coffeeList.length,
                     itemBuilder: (context, index) {
                       final coffee = coffeeList[index];
-                      return _buildCoffeeCard(
-                        context,
-                        coffee["name"]!,
-                        coffee["image"]!,
-                        coffee["desc"]!,
-                      );
+                      return _buildCoffeeCard(context, coffee["name"]!, coffee["image"]!, coffee["desc"]!);
                     },
                   ),
 
@@ -188,7 +142,10 @@ class CoffeeListPage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4E8D7C),
                         shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: width * 0.04,
+                          vertical: height * 0.015,
+                        ),
                       ),
                       onPressed: () {
                         debugPrint("Add Others clicked");
@@ -196,20 +153,10 @@ class CoffeeListPage extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Text(
-                            "Add Others",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(width: 6), // jarak antara teks dan ikon
-                          Icon(
-                            Icons.add_circle_outline,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                          Text("Add Others",
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                          SizedBox(width: 6),
+                          Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
                         ],
                       ),
                     ),
@@ -230,110 +177,61 @@ class CoffeeListPage extends StatelessWidget {
         showSelectedLabels: true,
         showUnselectedLabels: true,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_food_beverage_outlined),
-            label: "Add Drinks",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: "Logs",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.emoji_food_beverage_outlined), label: "Add Drinks"),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_month_outlined), label: "Logs"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
-
     );
   }
 
-  // 🔧 Coffee Card baru
-  static Widget _buildCoffeeCard(BuildContext context, String name, String imagePath, String description, {bool showLove = false}) {
+  // 🔧 Coffee Card responsif
+  static Widget _buildCoffeeCard(BuildContext context, String name, String imagePath, String description,
+      {bool showLove = false}) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: Colors.white70,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromRGBO(0, 0, 0, 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: 145,
+            height: width * 0.31,
             child: Stack(
               children: [
                 Align(
                   alignment: Alignment.center,
-                  child: Image.asset(
-                    imagePath,
-                    height: 95,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.asset(imagePath, height: width * 0.22, fit: BoxFit.contain),
                 ),
                 if (showLove)
-                  const Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Icon(
-                      Icons.favorite,
-                      color: Colors.red,
-                      size: 20,
-                    ),
-                  ),
+                  const Positioned(top: 10, right: 10, child: Icon(Icons.favorite, color: Colors.red, size: 20)),
               ],
             ),
           ),
-
-          // Nama & deskripsi
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF6E3D2C),
-                  ),
-                ),
+                Text(description,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6E3D2C))),
               ],
             ),
           ),
-
-          // Tombol plus
           Align(
             alignment: Alignment.bottomRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 0, bottom: 0),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  size: 24,
-                  color: Color(0xFF4E8D7C),
-                ),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/drinkinformation');
-                },
-              ),
+            child: IconButton(
+              icon: const Icon(Icons.add_circle_outline, size: 24, color: Color(0xFF4E8D7C)),
+              onPressed: () {
+                Navigator.pushNamed(context, '/drinkinformation');
+              },
             ),
           ),
         ],
