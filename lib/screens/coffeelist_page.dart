@@ -122,7 +122,7 @@ class CoffeeListPage extends StatelessWidget {
 
             const SizedBox(height: 20),
             SizedBox( //
-              height: 220,
+              height: 234,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: coffeeList.length,
@@ -131,6 +131,7 @@ class CoffeeListPage extends StatelessWidget {
                   return SizedBox(
                     width: MediaQuery.of(context).size.width / 3 - 12,
                     child: _buildCoffeeCard(
+                      context,
                       coffee["name"]!,
                       coffee["image"]!,
                       coffee["desc"]!,
@@ -164,7 +165,7 @@ class CoffeeListPage extends StatelessWidget {
                   GridView.builder(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      childAspectRatio: 0.60,
+                      childAspectRatio: 0.58,
                       mainAxisSpacing: 15,
                       crossAxisSpacing: 5,
                     ),
@@ -172,6 +173,7 @@ class CoffeeListPage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final coffee = coffeeList[index];
                       return _buildCoffeeCard(
+                        context,
                         coffee["name"]!,
                         coffee["image"]!,
                         coffee["desc"]!,
@@ -251,7 +253,7 @@ class CoffeeListPage extends StatelessWidget {
   }
 
   // 🔧 Coffee Card baru
-  static Widget _buildCoffeeCard(String name, String imagePath, String description, {bool showLove = false}) {
+  static Widget _buildCoffeeCard(BuildContext context, String name, String imagePath, String description, {bool showLove = false}) {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
@@ -321,11 +323,16 @@ class CoffeeListPage extends StatelessWidget {
           Align(
             alignment: Alignment.bottomRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 8, bottom: 0, top: 5),
-              child: Icon(
-                Icons.add_circle_outline,
-                size: 24,
-                color: Color(0xFF4E8D7C),
+              padding: const EdgeInsets.only(right: 0, bottom: 0),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.add_circle_outline,
+                  size: 24,
+                  color: Color(0xFF4E8D7C),
+                ),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/drinkinformation');
+                },
               ),
             ),
           ),

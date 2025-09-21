@@ -1,4 +1,5 @@
 import 'package:caffeine_tracker/screens/coffeelist_page.dart';
+import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
 import 'package:caffeine_tracker/screens/onboarding_page.dart';
 import 'package:caffeine_tracker/screens/tracker_page.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingPage(),
         '/tracker': (context) => const TrackerPage(),
         '/coffeelist': (context) => const CoffeeListPage(),
+        '/drinkinformation': (context) => const DrinkinformationPage(),
       },
     );
   }
