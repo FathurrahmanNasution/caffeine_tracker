@@ -148,7 +148,7 @@ class CoffeeListPage extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        debugPrint("Add Others clicked");
+                        Navigator.pushNamed(context, '/addotherdrink');
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
