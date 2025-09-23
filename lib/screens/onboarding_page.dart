@@ -48,7 +48,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 Text(
                   _pages[index]["title"]!,
                   style: const TextStyle(
-                      fontSize: 26, fontWeight: FontWeight.bold),
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 15),
@@ -69,7 +71,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               color: Colors.brown,
               child: TextButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/coffeelist');
+                  Navigator.pushReplacementNamed(context, '/dashboard');
                 },
                 child: const Text(
                   "Get Started",

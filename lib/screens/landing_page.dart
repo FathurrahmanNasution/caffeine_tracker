@@ -8,7 +8,8 @@ class LandingPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFD8B899),
       body: SafeArea(
-        child: Center( // makes everything centered horizontally
+        child: Center(
+          // makes everything centered horizontally
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -26,8 +27,11 @@ class LandingPage extends StatelessWidget {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 40, vertical: 14),
+                    horizontal: 40,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),

@@ -1,5 +1,6 @@
 import 'package:caffeine_tracker/screens/addotherdrink_page.dart';
 import 'package:caffeine_tracker/screens/coffeelist_page.dart';
+import 'package:caffeine_tracker/screens/dashboard_page.dart';
 import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
 import 'package:caffeine_tracker/screens/onboarding_page.dart';
 import 'package:caffeine_tracker/screens/tracker_page.dart';
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
         '/coffeelist': (context) => const CoffeeListPage(),
         '/drinkinformation': (context) => const DrinkinformationPage(),
         '/addotherdrink': (context) => const AddotherdrinkPage(),
+        '/dashboard': (context) => const DashboardPage(),
       },
     );
   }
