@@ -18,6 +18,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
 
   late TextEditingController _servingController;
   late TextEditingController _caffeineController;
+  late TextEditingController _drinkNameController; // tambahan controller untuk drink name
 
   @override
   void initState() {
@@ -27,12 +28,14 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
     _servingController = TextEditingController(text: "$servingSize");
     _caffeineController =
         TextEditingController(text: caffeineContent.toStringAsFixed(1));
+    _drinkNameController = TextEditingController(); // inisialisasi controller drink name
   }
 
   @override
   void dispose() {
     _servingController.dispose();
     _caffeineController.dispose();
+    _drinkNameController.dispose(); // dispose controller drink name
     super.dispose();
   }
 
@@ -225,7 +228,63 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
                           color: Color(0xFF61412D),
                           thickness: 1.6,
                         ),
-                        const SizedBox(height: 7),
+                        const SizedBox(height: 20),
+
+                        // Drink Name Field
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Drink Name",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF42261D),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color.fromRGBO(255, 255, 255, 0.7),
+                                border: Border.all(
+                                  color: const Color(0xFFD6CCC2),
+                                  width: 2.0,
+                                ),
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _drinkNameController,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: "Enter drink name",
+                                        hintStyle: TextStyle(
+                                          color: Color(0xFF9E8B7B),
+                                          fontSize: 16,
+                                        ),
+                                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.edit,
+                                    color: Color(0xFFD6CCC2),
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
 
                         // Serving size
                         Row(
@@ -422,44 +481,8 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
                           ],
                         ),
 
-                        const SizedBox(height: 30),
-
-                        // Save button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFA67C52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                            onPressed: () {
-                              debugPrint("Serving size: $servingSize ml");
-                              debugPrint("Caffeine content: $caffeineContent mg");
-                            },
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_circle_outline,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Save",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // Tambahan padding untuk memberikan ruang sebelum tombol save
+                        SizedBox(height: 100),
                       ],
                     ),
                   ),
@@ -468,6 +491,51 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
             ),
           ),
         ],
+      ),
+
+      // Fixed Save button at bottom
+      bottomSheet: Container(
+        color: const Color(0xFFF5EBE0),
+        padding: const EdgeInsets.fromLTRB(35, 16, 35, 16),
+        child: SafeArea(
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFA67C52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () {
+                debugPrint("Drink name: ${_drinkNameController.text}");
+                debugPrint("Serving size: $servingSize ml");
+                debugPrint("Caffeine content: $caffeineContent mg");
+                debugPrint("Date time: $selectedDateTime");
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_circle_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    "Save",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
 
       // Bottom Navigation
