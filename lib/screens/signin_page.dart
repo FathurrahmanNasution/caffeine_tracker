@@ -308,8 +308,8 @@ class _SignInPageState extends State<SignInPage> {
       return;
     }
 
-    // Implement sign in logic here
-    _showSnackBar("Sign in successful!");
+    // Navigate to onboarding page after successful validation
+    Navigator.pushReplacementNamed(context, '/onboarding');
   }
 
   void _handleForgotPassword() {
