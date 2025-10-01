@@ -8,39 +8,67 @@ class LandingPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFD8B899),
       body: SafeArea(
-        child: Center(
-          // makes everything centered horizontally
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              const Spacer(flex: 2),
               Image.asset("assets/images/coffee.png", height: 200),
-              const SizedBox(height: 20),
-              const Text(
-                "Track Your Caffeine,\nTransform Your Health",
+              const Spacer(flex: 1),
+              RichText(
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                text: const TextSpan(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  children: [
+                    TextSpan(text: "Track Your "),
+                    TextSpan(
+                      text: "Caffeine",
+                      style: TextStyle(color: Color(0xFF874C2B)),
+                    ),
+                    TextSpan(text: ",\nTransform Your "),
+                    TextSpan(
+                      text: "Health",
+                      style: TextStyle(color: Color(0xFF4E8D7C)),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
-              const Text("Stay healthy by tracking every drink."),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
+              const Text(
+                "Stay healthy by tracking every drink.",
+                style: TextStyle(
+                  color: Color(0xFFFFFFFF),
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(flex: 2),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(166, 124, 82, 1),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/signup');
+                  },
+                  child: const Text(
+                    "Get Started",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/signup');
-                },
-                child: const Text("Get Started"),
               ),
+              const SizedBox(height: 50),
             ],
           ),
         ),
