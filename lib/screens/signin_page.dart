@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -10,8 +11,10 @@ class SignInPage extends StatefulWidget {
 class _SignInPageState extends State<SignInPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _auth = AuthService();
 
   bool _isPasswordVisible = false;
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -136,16 +139,23 @@ class _SignInPageState extends State<SignInPage> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                         ),
-                        onPressed: () {
-                          _handleSignIn();
-                        },
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        onPressed: _loading ? null : _handleSignIn,
+                        child: _loading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                "Login",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -290,8 +300,8 @@ class _SignInPageState extends State<SignInPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide(
-                  color: const Color(0xFF4A7C59),
+                borderSide: const BorderSide(
+                  color: Color(0xFF4A7C59),
                   width: 1,
                 ),
               ),
@@ -302,24 +312,41 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
-  void _handleSignIn() {
-    if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
+  Future<void> _handleSignIn() async {
+    final username = usernameController.text.trim();
+    final password = passwordController.text;
+
+    if (username.isEmpty || password.isEmpty) {
       _showSnackBar("Please fill in all fields");
       return;
     }
 
-    // Navigate to onboarding page after successful validation
-    Navigator.pushReplacementNamed(context, '/onboarding');
+    setState(() => _loading = true);
+    
+    try {
+      final user = await _auth.signInWithUsername(username, password);
+      if (!mounted) return;
+
+      if (user != null) {
+        // Navigate to onboarding after successful sign in
+        Navigator.pushReplacementNamed(context, '/onboarding');
+      } else {
+        _showSnackBar("Sign in failed. Please try again.");
+      }
+    } catch (err) {
+      if (!mounted) return;
+      _showSnackBar(err.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _handleForgotPassword() {
-    _showSnackBar("Forgot password clicked");
-    // Navigate to forgot password page or show dialog
+    _showSnackBar("Forgot password feature coming soon");
   }
 
   void _handleGoogleSignIn() {
-    // Implement Google Sign In logic here
-    _showSnackBar("Google Sign In clicked");
+    _showSnackBar("Google Sign In coming soon");
   }
 
   void _showSnackBar(String message) {

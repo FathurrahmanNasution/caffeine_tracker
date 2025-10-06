@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -11,8 +12,10 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _auth = AuthService();
 
   bool _isPasswordVisible = false;
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -135,16 +138,23 @@ class _SignUpPageState extends State<SignUpPage> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                         ),
-                        onPressed: () {
-                          _handleSignUp();
-                        },
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        onPressed: _loading ? null : _handleSignUp,
+                        child: _loading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                "Register",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -202,7 +212,6 @@ class _SignUpPageState extends State<SignUpPage> {
                             width: 24,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
-                              print("Error loading Google logo: $error");
                               return const Icon(
                                 Icons.g_mobiledata,
                                 size: 32,
@@ -295,8 +304,8 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide(
-                  color: const Color(0xFF4A7C59),
+                borderSide: const BorderSide(
+                  color: Color(0xFF4A7C59),
                   width: 1,
                 ),
               ),
@@ -307,25 +316,58 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  void _handleSignUp() {
-    if (usernameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        passwordController.text.isEmpty) {
+  Future<void> _handleSignUp() async {
+    final username = usernameController.text.trim();
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (username.isEmpty || email.isEmpty || password.isEmpty) {
       _showSnackBar("Please fill in all fields");
       return;
     }
 
-    if (passwordController.text.length < 6) {
+    if (password.length < 6) {
       _showSnackBar("Password must be at least 6 characters");
       return;
     }
 
-    Navigator.pushReplacementNamed(context, '/signin');
+    setState(() => _loading = true);
+
+    try {
+      final user = await _auth.signUpWithUsername(
+        username: username,
+        email: email,
+        password: password,
+        displayName: null,
+      );
+      if (!mounted) return;
+
+      if (user != null) {
+        _showSnackBar("Account created successfully! Please sign in.");
+        Navigator.pushReplacementNamed(context, '/signin');
+      } else {
+        _showSnackBar("Sign up failed. Please try again.");
+      }
+    } catch (err) {
+      if (!mounted) return;
+      
+      final msg = err.toString();
+      if (msg.contains('Username already taken')) {
+        _showSnackBar('Username already taken. Choose another.');
+      } else if (msg.contains('Email already in use')) {
+        _showSnackBar('Email already in use.');
+      } else if (msg.contains('Username invalid')) {
+        _showSnackBar('Username must be 3-30 characters (a-z, 0-9, underscore)');
+      } else {
+        _showSnackBar(msg.replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _handleGoogleSignIn() {
-    // Implement Google Sign In logic here
-    _showSnackBar("Google Sign In clicked");
+    _showSnackBar("Google Sign In coming soon");
   }
 
   void _showSnackBar(String message) {

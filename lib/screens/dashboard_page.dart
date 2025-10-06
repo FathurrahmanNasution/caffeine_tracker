@@ -1,16 +1,6 @@
+import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:flutter/material.dart';
-
-class Dashboard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Coffee Tracker',
-      theme: ThemeData(primarySwatch: Colors.brown, fontFamily: 'Poppins'),
-      home: DashboardPage(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
+import '../services/auth_service.dart';
 
 class Drink {
   final String name;
@@ -36,6 +26,9 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _auth = AuthService();
+  UserModel? _userProfile;
+  bool _loading = true;
 
   List<Drink> drinks = [
     Drink(
@@ -54,18 +47,54 @@ class _DashboardPageState extends State<DashboardPage> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/signin');
+      }
+      return;
+    }
+
+    try {
+      final doc = await _auth.getProfileDoc(user.uid);
+      if (mounted) {
+        setState(() {
+          _userProfile = UserModel.fromMap(user.uid, doc.data());
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   void _deleteDrink(int index) {
     setState(() {
       drinks.removeAt(index);
     });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Drink deleted successfully')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Drink deleted successfully')),
+    );
   }
 
   void _editDrink(int index) {
-    // Navigate to drink information page
     Navigator.pushNamed(context, '/drinkinformation');
+  }
+
+  Future<void> _handleSignOut() async {
+    await _auth.signOut();
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/landing');
+    }
   }
 
   @override
@@ -73,13 +102,19 @@ class _DashboardPageState extends State<DashboardPage> {
     final size = MediaQuery.of(context).size;
     final height = size.height;
 
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5EBE0),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF5EBE0),
       drawer: _buildDrawer(),
       body: Column(
         children: [
-          // Fixed top navigation bar from DrinkinformationPage
           Container(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
@@ -100,14 +135,22 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Image.asset(
                     "assets/images/coffee.png",
                     height: height * 0.06,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.local_cafe, size: 40);
+                    },
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const CircleAvatar(
-                      backgroundImage: AssetImage("assets/images/profile.png"),
+                  child: GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                    child: CircleAvatar(
+                      backgroundImage: _userProfile?.photoUrl != null
+                          ? NetworkImage(_userProfile!.photoUrl!)
+                          : null,
+                      child: _userProfile?.photoUrl == null
+                          ? const Icon(Icons.person)
+                          : null,
                     ),
                   ),
                 ),
@@ -116,18 +159,18 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildGreeting(),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   _buildTitle(),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   _buildCaffeineInfo(),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   _buildChart(),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   _buildDrinksSection(),
                 ],
               ),
@@ -135,10 +178,9 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
-      // Updated Bottom Navigation from DrinkinformationPage
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: 0, // Changed to 0 since this is the Home page
+        currentIndex: 0,
         selectedItemColor: const Color(0xFF6E3D2C),
         unselectedItemColor: const Color(0xFFA67C52),
         showSelectedLabels: true,
@@ -146,7 +188,6 @@ class _DashboardPageState extends State<DashboardPage> {
         onTap: (int index) {
           switch (index) {
             case 0:
-              // Already on Home page, do nothing or refresh
               break;
             case 1:
               Navigator.pushNamed(context, '/addotherdrink');
@@ -179,18 +220,20 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildDrawer() {
+    final displayName = _userProfile?.displayName ?? _userProfile?.username ?? 'User';
+    
     return Drawer(
       backgroundColor: const Color(0xFFF5EBE0),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          SizedBox(height: 60),
+          const SizedBox(height: 60),
           Container(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Account',
                   style: TextStyle(
                     fontSize: 24,
@@ -198,15 +241,15 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: Colors.black87,
                   ),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Text(
-                  'Welcome, Clarissa!',
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                  'Welcome, $displayName!',
+                  style: const TextStyle(fontSize: 16, color: Colors.black54),
                 ),
               ],
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           _buildDrawerItem('Profile', Icons.person, () {
             Navigator.pushNamed(context, '/profile');
           }),
@@ -216,20 +259,18 @@ class _DashboardPageState extends State<DashboardPage> {
           _buildDrawerItem('Change Password', Icons.lock, () {
             Navigator.pushNamed(context, '/change-password');
           }),
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: OutlinedButton(
-              onPressed: () {
-                // Handle sign out
-              },
+              onPressed: _handleSignOut,
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.brown),
+                side: const BorderSide(color: Colors.brown),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: Text('Sign Out', style: TextStyle(color: Colors.brown)),
+              child: const Text('Sign Out', style: TextStyle(color: Colors.brown)),
             ),
           ),
         ],
@@ -240,27 +281,32 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildDrawerItem(String title, IconData icon, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Colors.black54),
-      title: Text(title, style: TextStyle(fontSize: 16, color: Colors.black87)),
-      trailing: Icon(Icons.chevron_right, color: Colors.black54),
+      title: Text(title, style: const TextStyle(fontSize: 16, color: Colors.black87)),
+      trailing: const Icon(Icons.chevron_right, color: Colors.black54),
       onTap: onTap,
     );
   }
 
   Widget _buildGreeting() {
+    final displayName = _userProfile?.displayName ?? _userProfile?.username ?? 'User';
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Hi there,',
           style: TextStyle(fontSize: 16, color: Colors.black54),
         ),
-        Text('Clarissa', style: TextStyle(fontSize: 16, color: Colors.black54)),
+        Text(
+          displayName,
+          style: const TextStyle(fontSize: 16, color: Colors.black54),
+        ),
       ],
     );
   }
 
   Widget _buildTitle() {
-    return Text(
+    return const Text(
       'Track your\nCaffeine Journey',
       style: TextStyle(
         fontSize: 28,
@@ -272,14 +318,14 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildCaffeineInfo() {
-    return Text(
+    return const Text(
       'Today Caffeine in Take: 172g',
       style: TextStyle(fontSize: 14, color: Colors.black54),
     );
   }
 
   Widget _buildChart() {
-    return Container(
+    return SizedBox(
       height: 200,
       child: CustomPaint(painter: CaffeineChartPainter(), child: Container()),
     );
@@ -289,7 +335,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Drinks of the day',
           style: TextStyle(
             fontSize: 20,
@@ -297,19 +343,19 @@ class _DashboardPageState extends State<DashboardPage> {
             color: Colors.black87,
           ),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
           decoration: BoxDecoration(
-            color: Color(0xFF8B4513),
+            color: const Color(0xFF8B4513),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(
+          child: const Text(
             'You still need 30 mg of caffeine today!',
             style: TextStyle(color: Colors.white, fontSize: 12),
           ),
         ),
-        SizedBox(height: 15),
+        const SizedBox(height: 15),
         ...drinks.asMap().entries.map((entry) {
           int index = entry.key;
           Drink drink = entry.value;
@@ -321,10 +367,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildDrinkCard(Drink drink, int index) {
     return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      padding: EdgeInsets.all(15),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Color(0xFFD2B48C),
+        color: const Color(0xFFD2B48C),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -337,10 +383,10 @@ class _DashboardPageState extends State<DashboardPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
-              child: Text(drink.image, style: TextStyle(fontSize: 20)),
+              child: Text(drink.image, style: const TextStyle(fontSize: 20)),
             ),
           ),
-          SizedBox(width: 15),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,13 +396,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Text(
                       drink.name,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    Text(
+                    const Text(
                       'mg',
                       style: TextStyle(fontSize: 12, color: Colors.black54),
                     ),
@@ -364,18 +410,18 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 Text(
                   '${drink.caffeine} • ${drink.size}',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.brown[800],
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     drink.time,
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
                   ),
                 ),
               ],
@@ -390,7 +436,7 @@ class _DashboardPageState extends State<DashboardPage> {
               }
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
+              const PopupMenuItem<String>(
                 value: 'edit',
                 child: Row(
                   children: [
@@ -400,7 +446,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ],
                 ),
               ),
-              PopupMenuItem<String>(
+              const PopupMenuItem<String>(
                 value: 'delete',
                 child: Row(
                   children: [
@@ -411,7 +457,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
             ],
-            child: Icon(Icons.more_vert, color: Colors.black54),
+            child: const Icon(Icons.more_vert, color: Colors.black54),
           ),
         ],
       ),
@@ -423,19 +469,19 @@ class _DashboardPageState extends State<DashboardPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Drink'),
-          content: Text('Are you sure you want to delete this drink?'),
+          title: const Text('Delete Drink'),
+          content: const Text('Are you sure you want to delete this drink?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 _deleteDrink(index);
               },
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -456,18 +502,15 @@ class CaffeineChartPainter extends CustomPainter {
       ..color = Colors.brown[300]!.withOpacity(0.3)
       ..style = PaintingStyle.fill;
 
-    // Draw background grid
     final gridPaint = Paint()
       ..color = Colors.grey[300]!
       ..strokeWidth = 0.5;
 
-    // Horizontal grid lines
     for (int i = 0; i <= 5; i++) {
       double y = size.height - (i * size.height / 5);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    // Draw chart data
     final path = Path();
     final points = [
       Offset(0, size.height * 0.7),
@@ -483,17 +526,13 @@ class CaffeineChartPainter extends CustomPainter {
       path.lineTo(points[i].dx, points[i].dy);
     }
 
-    // Fill area under curve
     final fillPath = Path.from(path);
     fillPath.lineTo(size.width, size.height);
     fillPath.lineTo(0, size.height);
     fillPath.close();
     canvas.drawPath(fillPath, fillPaint);
-
-    // Draw the curve
     canvas.drawPath(path, paint);
 
-    // Draw "Americano 4g" label
     final textPainter = TextPainter(
       text: TextSpan(
         text: 'Americano 4g',
@@ -508,13 +547,12 @@ class CaffeineChartPainter extends CustomPainter {
     textPainter.layout();
     textPainter.paint(canvas, Offset(size.width * 0.3, size.height * 0.25));
 
-    // Y-axis labels
     final yLabels = ['0', '1000', '1500', '2000', '2500'];
     for (int i = 0; i < yLabels.length; i++) {
       final labelPainter = TextPainter(
         text: TextSpan(
           text: yLabels[i],
-          style: TextStyle(color: Colors.black54, fontSize: 10),
+          style: const TextStyle(color: Colors.black54, fontSize: 10),
         ),
         textDirection: TextDirection.ltr,
       );
@@ -525,13 +563,12 @@ class CaffeineChartPainter extends CustomPainter {
       );
     }
 
-    // X-axis labels
     final xLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     for (int i = 0; i < xLabels.length; i++) {
       final labelPainter = TextPainter(
         text: TextSpan(
           text: xLabels[i],
-          style: TextStyle(color: Colors.black54, fontSize: 10),
+          style: const TextStyle(color: Colors.black54, fontSize: 10),
         ),
         textDirection: TextDirection.ltr,
       );
