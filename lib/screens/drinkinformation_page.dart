@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:caffeine_tracker/services/drink_service.dart';
+import 'package:caffeine_tracker/services/consumption_service.dart';
+import 'package:caffeine_tracker/model/consumption_log.dart';
+import 'package:caffeine_tracker/model/drink_model.dart';
 
 class DrinkinformationPage extends StatefulWidget {
   const DrinkinformationPage({super.key});
@@ -9,12 +13,16 @@ class DrinkinformationPage extends StatefulWidget {
 }
 
 class _DrinkinformationPageState extends State<DrinkinformationPage> {
-  bool isFavorite = false;
+  final DrinkService _drinkService = DrinkService();
+  final ConsumptionService _consumptionService = ConsumptionService();
 
-  int servingSize = 240; // default serving
-  double caffeineContent = 0; // hasil perhitungan
-  bool isCaffeineEdited = false; // penanda user edit manual
-  DateTime selectedDateTime = DateTime.now(); // tambah variable untuk datetime
+  DrinkModel? drink;
+  String currentUserId = "USER_ID_HERE";
+
+  int servingSize = 240;
+  double caffeineContent = 0;
+  bool isCaffeineEdited = false;
+  DateTime selectedDateTime = DateTime.now();
 
   late TextEditingController _servingController;
   late TextEditingController _caffeineController;
@@ -22,11 +30,35 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
   @override
   void initState() {
     super.initState();
-    caffeineContent = (50 / 200) * servingSize;
+    _servingController = TextEditingController();
+    _caffeineController = TextEditingController();
+  }
 
-    _servingController = TextEditingController(text: "$servingSize");
-    _caffeineController =
-        TextEditingController(text: caffeineContent.toStringAsFixed(1));
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (drink == null) {
+      drink = ModalRoute.of(context)!.settings.arguments as DrinkModel?;
+
+      if (drink != null) {
+        // Set initial values dari drink
+        servingSize = drink!.standardVolume;
+
+        // Hitung caffeine per mL dari drink
+        double caffeinePerMl = drink!.caffeineinMg / drink!.standardVolume;
+        caffeineContent = caffeinePerMl * servingSize;
+
+        _servingController.text = servingSize.toString();
+        _caffeineController.text = caffeineContent.toStringAsFixed(1);
+      }
+    }
+  }
+
+  double _calculateCaffeine(int serving) {
+    if (drink == null) return 0;
+    double caffeinePerMl = drink!.caffeineinMg / drink!.standardVolume;
+    return caffeinePerMl * serving;
   }
 
   @override
@@ -42,7 +74,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       _servingController.text = servingSize.toString();
 
       if (!isCaffeineEdited) {
-        caffeineContent = (50 / 200) * servingSize;
+        caffeineContent = _calculateCaffeine(servingSize);
         _caffeineController.text = caffeineContent.toStringAsFixed(1);
       }
     });
@@ -55,7 +87,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
         _servingController.text = servingSize.toString();
 
         if (!isCaffeineEdited) {
-          caffeineContent = (50 / 200) * servingSize;
+          caffeineContent = _calculateCaffeine(servingSize);
           _caffeineController.text = caffeineContent.toStringAsFixed(1);
         }
       }
@@ -68,7 +100,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       setState(() {
         servingSize = number;
         if (!isCaffeineEdited) {
-          caffeineContent = (50 / 200) * servingSize;
+          caffeineContent = _calculateCaffeine(servingSize);
           _caffeineController.text = caffeineContent.toStringAsFixed(1);
         }
       });
@@ -188,11 +220,11 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                         left: 0,
                         right: 0,
                         child: Center(
-                          child: Image.asset(
-                            "assets/images/coffee.png",
-                            height: height * 0.15,
-                            fit: BoxFit.contain,
-                          ),
+                          child: drink != null
+                              ? (drink!.imageUrl.startsWith('http')
+                              ? Image.network(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain)
+                              : Image.asset(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain))
+                              : Image.asset("assets/images/coffee.png", height: height * 0.15, fit: BoxFit.contain),
                         ),
                       ),
                     ],
@@ -210,22 +242,29 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              "Americano",
-                              style: TextStyle(
+                            Text(
+                              drink?.name ?? "Unknown Drink", // ← Update
+                              style: const TextStyle(
                                 fontSize: 38,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF000000),
                               ),
                             ),
                             IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  isFavorite = !isFavorite;
-                                });
+                              onPressed: () async {
+                                if (drink != null) {
+                                  await _drinkService.toggleFavorite(
+                                      currentUserId,
+                                      drink!.id,
+                                      drink!.isFavorite
+                                  );
+                                  setState(() {
+                                    drink!.isFavorite = !drink!.isFavorite;
+                                  });
+                                }
                               },
                               icon: Icon(
-                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                drink?.isFavorite ?? false ? Icons.favorite : Icons.favorite_border,
                                 color: Colors.red,
                                 size: 32,
                               ),
@@ -239,7 +278,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                         ),
                         const SizedBox(height: 7),
 
-                        // Informasi singkat
+                        // Information
                         const Row(
                           children: [
                             Chip(
@@ -256,9 +295,9 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const Text(
-                          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur aliquam neque pulvinar pellentesque laoreet. Curabitur pharetra nibh ac turpis vehicula efficitur. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.",
-                          style: TextStyle(
+                        Text(
+                          drink?.information ?? "No information available", // ← Update
+                          style: const TextStyle(
                             fontSize: 14,
                             height: 1.4,
                             color: Colors.black,
@@ -476,9 +515,27 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                            onPressed: () {
-                              debugPrint("Serving size: $servingSize ml");
-                              debugPrint("Caffeine content: $caffeineContent mg");
+                            onPressed: () async {
+                              if (drink != null) {
+                                final log = ConsumptionLog(
+                                  id: '',
+                                  userId: currentUserId,
+                                  drinkId: drink!.id,
+                                  drinkName: drink!.name,
+                                  servingSize: servingSize,
+                                  caffeineContent: caffeineContent,
+                                  consumedAt: selectedDateTime,
+                                );
+
+                                await _consumptionService.addConsumption(log);
+
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Consumption saved!')),
+                                  );
+                                  Navigator.pop(context);
+                                }
+                              }
                             },
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,

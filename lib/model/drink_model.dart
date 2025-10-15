@@ -2,43 +2,41 @@ class DrinkModel {
   final String id;
   final String name;
   final String imageUrl;
-  final double caffeinePerMl; // mg per mL
-  final int standardVolume; // mL
+  final double caffeineinMg;
+  final int standardVolume;
   final String information;
-  final bool isFavorite;
+  bool isFavorite; // Jadi non-final, untuk update UI
 
   DrinkModel({
     required this.id,
     required this.name,
     required this.imageUrl,
-    required this.caffeinePerMl,
+    required this.caffeineinMg,
     required this.standardVolume,
     required this.information,
     this.isFavorite = false,
   });
 
-  // From Firestore
   factory DrinkModel.fromMap(Map<String, dynamic> map, String documentId) {
     return DrinkModel(
       id: documentId,
       name: map['name'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
-      caffeinePerMl: (map['caffeinePerMl'] ?? 0).toDouble(),
+      caffeineinMg: (map['caffeineinMg'] ?? 0),
       standardVolume: map['standardVolume'] ?? 0,
       information: map['information'] ?? '',
-      isFavorite: map['isFavorite'] ?? false,
+      // isFavorite tidak lagi dari map
     );
   }
 
-  // To Firestore
   Map<String, dynamic> toMap() {
     return {
       'name': name,
       'imageUrl': imageUrl,
-      'caffeinePerMl': caffeinePerMl,
+      'caffeineinMg': caffeineinMg,
       'standardVolume': standardVolume,
       'information': information,
-      'isFavorite': isFavorite,
+      // Tidak simpan isFavorite di sini
     };
   }
 }
