@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:caffeine_tracker/model/drink_model.dart';
+import 'package:caffeine_tracker/services/drink_service.dart';
 
 class CoffeeListPage extends StatelessWidget {
-  const CoffeeListPage({super.key});
+  CoffeeListPage({super.key});
 
-  // List data minuman
-  final List<Map<String, String>> coffeeList = const [
-    {"name": "Espresso", "image": "assets/images/coffee.png", "desc": "2.1 mg per mL"},
-    {"name": "Americano", "image": "assets/images/coffee.png", "desc": "1.9 mg per mL"},
-    {"name": "Latte", "image": "assets/images/coffee.png", "desc": "1.2 mg per mL"},
-    {"name": "Cappuccino", "image": "assets/images/coffee.png", "desc": "1.5 mg per mL"},
-  ];
+  final DrinkService _drinkService = DrinkService();
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size; // ambil ukuran layar
+    final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
 
@@ -43,7 +39,7 @@ class CoffeeListPage extends StatelessWidget {
       ),
 
       body: Padding(
-        padding: EdgeInsets.all(width * 0.04), // padding fleksibel
+        padding: EdgeInsets.all(width * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -53,7 +49,7 @@ class CoffeeListPage extends StatelessWidget {
             Align(
               alignment: Alignment.center,
               child: SizedBox(
-                width: width * 0.9, // fleksibel
+                width: width * 0.9,
                 child: TextField(
                   style: const TextStyle(color: Color(0xFF5D3A00)),
                   decoration: InputDecoration(
@@ -94,15 +90,36 @@ class CoffeeListPage extends StatelessWidget {
 
             SizedBox(height: height * 0.02),
             SizedBox(
-              height: height * 0.23, // responsif
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: coffeeList.length,
-                itemBuilder: (context, index) {
-                  final coffee = coffeeList[index];
-                  return SizedBox(
-                    width: width * 0.3, // responsif
-                    child: _buildCoffeeCard(context, coffee["name"]!, coffee["image"]!, coffee["desc"]!, showLove: true),
+              height: height * 0.23,
+              child: StreamBuilder<List<DrinkModel>>(
+                stream: _drinkService.getFavoriteDrinks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text("No favorites yet",
+                          style: TextStyle(color: Color(0xFF6E3D2C))),
+                    );
+                  }
+
+                  final favorites = snapshot.data!;
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: favorites.length,
+                    itemBuilder: (context, index) {
+                      final drink = favorites[index];
+                      return SizedBox(
+                        width: width * 0.3,
+                        child: _buildCoffeeCard(
+                            context,
+                            drink,
+                            showLove: true
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -121,17 +138,34 @@ class CoffeeListPage extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
-                  GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: width < 360 ? 2 : 3, // kalau layar kecil jadi 2 kolom
-                      childAspectRatio: 0.58,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 8,
-                    ),
-                    itemCount: coffeeList.length,
-                    itemBuilder: (context, index) {
-                      final coffee = coffeeList[index];
-                      return _buildCoffeeCard(context, coffee["name"]!, coffee["image"]!, coffee["desc"]!);
+                  StreamBuilder<List<DrinkModel>>(
+                    stream: _drinkService.getAllDrinks(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text("No drinks available",
+                              style: TextStyle(color: Color(0xFF6E3D2C))),
+                        );
+                      }
+
+                      final drinks = snapshot.data!;
+                      return GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: width < 360 ? 2 : 3,
+                          childAspectRatio: 0.58,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 8,
+                        ),
+                        itemCount: drinks.length,
+                        itemBuilder: (context, index) {
+                          final drink = drinks[index];
+                          return _buildCoffeeCard(context, drink);
+                        },
+                      );
                     },
                   ),
 
@@ -148,7 +182,7 @@ class CoffeeListPage extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pushNamed(context, '/addotherdrink');
+                        Navigator.pushNamed(context, '/admin');
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -187,8 +221,7 @@ class CoffeeListPage extends StatelessWidget {
   }
 
   // 🔧 Coffee Card responsif
-  static Widget _buildCoffeeCard(BuildContext context, String name, String imagePath, String description,
-      {bool showLove = false}) {
+  Widget _buildCoffeeCard(BuildContext context, DrinkModel drink, {bool showLove = false}) {
     final width = MediaQuery.of(context).size.width;
     return Container(
       margin: const EdgeInsets.only(right: 12),
@@ -206,10 +239,25 @@ class CoffeeListPage extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.center,
-                  child: Image.asset(imagePath, height: width * 0.22, fit: BoxFit.contain),
+                  child: Image.network(
+                    drink.imageUrl,
+                    height: width * 0.21,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        "assets/images/coffee.png",
+                        height: width * 0.21,
+                        fit: BoxFit.contain,
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  ),
                 ),
                 if (showLove)
-                  const Positioned(top: 10, right: 10, child: Icon(Icons.favorite, color: Colors.red, size: 20)),
+                  const Positioned(top: 12, right: 12, child: Icon(Icons.favorite, color: Colors.red, size: 20)),
               ],
             ),
           ),
@@ -218,10 +266,12 @@ class CoffeeListPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(drink.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 2),
-                Text(description,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6E3D2C))),
+                Text(
+                  "${drink.caffeinePerMl}mg ~ ${drink.standardVolume}mL",
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6E3D2C)),
+                ),
               ],
             ),
           ),
@@ -230,7 +280,11 @@ class CoffeeListPage extends StatelessWidget {
             child: IconButton(
               icon: const Icon(Icons.add_circle_outline, size: 24, color: Color(0xFF4E8D7C)),
               onPressed: () {
-                Navigator.pushNamed(context, '/drinkinformation');
+                Navigator.pushNamed(
+                  context,
+                  '/drinkinformation',
+                  arguments: drink.id, // Pass drink ID
+                );
               },
             ),
           ),

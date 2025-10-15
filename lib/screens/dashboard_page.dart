@@ -190,7 +190,7 @@ class _DashboardPageState extends State<DashboardPage> {
             case 0:
               break;
             case 1:
-              Navigator.pushNamed(context, '/addotherdrink');
+              Navigator.pushNamed(context, '/coffeelist');
               break;
             case 2:
               Navigator.pushNamed(context, '/logs');
