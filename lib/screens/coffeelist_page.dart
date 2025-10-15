@@ -239,7 +239,8 @@ class CoffeeListPage extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.center,
-                  child: Image.network(
+                  child: drink.imageUrl.startsWith('http')
+                      ? Image.network(
                     drink.imageUrl,
                     height: width * 0.21,
                     fit: BoxFit.contain,
@@ -253,6 +254,18 @@ class CoffeeListPage extends StatelessWidget {
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return const Center(child: CircularProgressIndicator());
+                    },
+                  )
+                      : Image.asset(
+                    drink.imageUrl,
+                    height: width * 0.21,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        "assets/images/coffee.png",
+                        height: width * 0.21,
+                        fit: BoxFit.contain,
+                      );
                     },
                   ),
                 ),
