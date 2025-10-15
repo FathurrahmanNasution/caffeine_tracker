@@ -26,7 +26,7 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
         id: '', // auto generated
         name: _nameController.text,
         imageUrl: _imageUrlController.text,
-        caffeinePerMl: double.parse(_caffeineController.text),
+        caffeineinMg: double.parse(_caffeineController.text),
         standardVolume: int.parse(_volumeController.text),
         information: _infoController.text,
         isFavorite: _isFavorite,
@@ -70,7 +70,7 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
             ),
             TextFormField(
               controller: _caffeineController,
-              decoration: const InputDecoration(labelText: 'Caffeine per mL'),
+              decoration: const InputDecoration(labelText: 'Caffeine in mg'),
               keyboardType: TextInputType.number,
               validator: (v) => v!.isEmpty ? 'Required' : null,
             ),

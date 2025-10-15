@@ -3,102 +3,156 @@ import 'package:caffeine_tracker/model/drink_model.dart';
 
 class DrinkService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _collection = 'drinks';
+  final String _drinksCollection = 'drinks';
+  final String _favoritesCollection = 'userFavorites';
 
-  // Get all drinks
-  Stream<List<DrinkModel>> getAllDrinks() {
-    return _firestore
-          .collection(_collection)
-          .where('isFavorite', isEqualTo: false)
-          .snapshots()
-          .map(
-            (snapshot) => snapshot.docs
-            .map((doc) => DrinkModel.fromMap(doc.data(), doc.id))
-            .toList(),
-    );
-  }
-
-  // Get favorites only
-  Stream<List<DrinkModel>> getFavoriteDrinks() {
-    return _firestore
-        .collection(_collection)
-        .where('isFavorite', isEqualTo: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+  // Get all drinks with favorite status for specific user
+  Stream<List<DrinkModel>> getAllDrinksForUser(String userId) async* {
+    await for (var drinksSnapshot in _firestore.collection(_drinksCollection).snapshots()) {
+      final drinks = drinksSnapshot.docs
           .map((doc) => DrinkModel.fromMap(doc.data(), doc.id))
-          .toList(),
-    );
+          .toList();
+
+      // Get user's favorites
+      final favSnapshot = await _firestore
+          .collection(_favoritesCollection)
+          .doc(userId)
+          .collection('favorites')
+          .get();
+
+      final favIds = favSnapshot.docs.map((doc) => doc.id).toSet();
+
+      // Set isFavorite for each drink (TANPA FILTER)
+      for (var drink in drinks) {
+        drink.isFavorite = favIds.contains(drink.id);
+      }
+
+      yield drinks; // Yield semua drinks
+    }
   }
 
-  // Get single drink by ID
-  Stream<DrinkModel?> getDrinkById(String id) {
-    return _firestore.collection(_collection).doc(id).snapshots().map(
-          (doc) => doc.exists ? DrinkModel.fromMap(doc.data()!, doc.id) : null,
-    );
+  // Get favorites only for specific user
+  Stream<List<DrinkModel>> getFavoriteDrinksForUser(String userId) async* {
+    await for (var favSnapshot in _firestore
+        .collection(_favoritesCollection)
+        .doc(userId)
+        .collection('favorites')
+        .snapshots()) {
+
+      final favIds = favSnapshot.docs.map((doc) => doc.id).toList();
+
+      if (favIds.isEmpty) {
+        yield [];
+        return;
+      }
+
+      // Get drink details
+      final drinks = <DrinkModel>[];
+      for (var drinkId in favIds) {
+        final drinkDoc = await _firestore.collection(_drinksCollection).doc(drinkId).get();
+        if (drinkDoc.exists) {
+          final drink = DrinkModel.fromMap(drinkDoc.data()!, drinkDoc.id);
+          drink.isFavorite = true;
+          drinks.add(drink);
+        }
+      }
+
+      yield drinks;
+    }
   }
 
-  // Get single drink by ID (Future - one time fetch)
-  Future<DrinkModel?> getDrinkByIdOnce(String id) async {
-    final doc = await _firestore.collection(_collection).doc(id).get();
-    return doc.exists ? DrinkModel.fromMap(doc.data()!, doc.id) : null;
+  // Get non-favorite drinks only
+  Stream<List<DrinkModel>> getNonFavoriteDrinksForUser(String userId) async* {
+    await for (var drinksSnapshot in _firestore.collection(_drinksCollection).snapshots()) {
+      final drinks = drinksSnapshot.docs
+          .map((doc) => DrinkModel.fromMap(doc.data(), doc.id))
+          .toList();
+
+      final favSnapshot = await _firestore
+          .collection(_favoritesCollection)
+          .doc(userId)
+          .collection('favorites')
+          .get();
+
+      final favIds = favSnapshot.docs.map((doc) => doc.id).toSet();
+
+      final nonFavoriteDrinks = <DrinkModel>[];
+      for (var drink in drinks) {
+        drink.isFavorite = favIds.contains(drink.id);
+        if (!drink.isFavorite) {
+          nonFavoriteDrinks.add(drink);
+        }
+      }
+
+      yield nonFavoriteDrinks;
+    }
   }
 
-  // Add new drink
-  Future<void> addDrink(DrinkModel drink) async {
-    await _firestore.collection(_collection).add(drink.toMap());
-  }
+  // Get single drink by ID with favorite status
+  Stream<DrinkModel?> getDrinkByIdForUser(String drinkId, String userId) async* {
+    await for (var drinkDoc in _firestore.collection(_drinksCollection).doc(drinkId).snapshots()) {
+      if (!drinkDoc.exists) {
+        yield null;
+        return;
+      }
 
-  // Add drink with custom ID
-  Future<void> addDrinkWithId(String id, DrinkModel drink) async {
-    await _firestore.collection(_collection).doc(id).set(drink.toMap());
-  }
+      final drink = DrinkModel.fromMap(drinkDoc.data()!, drinkDoc.id);
 
-  // Update drink
-  Future<void> updateDrink(String id, Map<String, dynamic> data) async {
-    await _firestore.collection(_collection).doc(id).update(data);
-  }
+      // Check if favorite
+      final favDoc = await _firestore
+          .collection(_favoritesCollection)
+          .doc(userId)
+          .collection('favorites')
+          .doc(drinkId)
+          .get();
 
-  // Update entire drink
-  Future<void> updateEntireDrink(String id, DrinkModel drink) async {
-    await _firestore.collection(_collection).doc(id).set(drink.toMap());
+      drink.isFavorite = favDoc.exists;
+      yield drink;
+    }
   }
 
   // Toggle favorite
-  Future<void> toggleFavorite(String id, bool currentStatus) async {
-    await _firestore.collection(_collection).doc(id).update({
-      'isFavorite': !currentStatus,
-    });
+  Future<void> toggleFavorite(String userId, String drinkId, bool currentStatus) async {
+    final favRef = _firestore
+        .collection(_favoritesCollection)
+        .doc(userId)
+        .collection('favorites')
+        .doc(drinkId);
+
+    if (currentStatus) {
+      // Remove from favorites
+      await favRef.delete();
+    } else {
+      // Add to favorites
+      await favRef.set({
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+    }
   }
 
-  // Delete drink
+  // Add new drink (admin only)
+  Future<void> addDrink(DrinkModel drink) async {
+    await _firestore.collection(_drinksCollection).add(drink.toMap());
+  }
+
+  // Update drink (admin only)
+  Future<void> updateDrink(String id, Map<String, dynamic> data) async {
+    await _firestore.collection(_drinksCollection).doc(id).update(data);
+  }
+
+  // Delete drink (admin only)
   Future<void> deleteDrink(String id) async {
-    await _firestore.collection(_collection).doc(id).delete();
+    await _firestore.collection(_drinksCollection).doc(id).delete();
   }
 
-  // Search drinks by name
-  Stream<List<DrinkModel>> searchDrinks(String query) {
-    return _firestore
-        .collection(_collection)
-        .where('name', isGreaterThanOrEqualTo: query)
-        .where('name', isLessThanOrEqualTo: query + '\uf8ff')
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-          .map((doc) => DrinkModel.fromMap(doc.data(), doc.id))
-          .toList(),
-    );
-  }
-
-  // Get drinks count
-  Future<int> getDrinksCount() async {
-    final snapshot = await _firestore.collection(_collection).get();
-    return snapshot.docs.length;
-  }
-
-  // Check if drink exists
-  Future<bool> drinkExists(String id) async {
-    final doc = await _firestore.collection(_collection).doc(id).get();
+  // Check if drink is favorite
+  Future<bool> isFavorite(String userId, String drinkId) async {
+    final doc = await _firestore
+        .collection(_favoritesCollection)
+        .doc(userId)
+        .collection('favorites')
+        .doc(drinkId)
+        .get();
     return doc.exists;
   }
 }

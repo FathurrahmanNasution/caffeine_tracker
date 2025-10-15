@@ -9,6 +9,7 @@ class CoffeeListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String currentUserId = "USER_ID_HERE";
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
@@ -92,7 +93,7 @@ class CoffeeListPage extends StatelessWidget {
             SizedBox(
               height: height * 0.23,
               child: StreamBuilder<List<DrinkModel>>(
-                stream: _drinkService.getFavoriteDrinks(),
+                stream: _drinkService.getFavoriteDrinksForUser(currentUserId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -139,7 +140,7 @@ class CoffeeListPage extends StatelessWidget {
               child: Stack(
                 children: [
                   StreamBuilder<List<DrinkModel>>(
-                    stream: _drinkService.getAllDrinks(),
+                    stream: _drinkService.getNonFavoriteDrinksForUser(currentUserId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -156,9 +157,9 @@ class CoffeeListPage extends StatelessWidget {
                       return GridView.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: width < 360 ? 2 : 3,
-                          childAspectRatio: 0.58,
+                          childAspectRatio: 0.59,
                           mainAxisSpacing: 12,
-                          crossAxisSpacing: 8,
+                          crossAxisSpacing: 3,
                         ),
                         itemCount: drinks.length,
                         itemBuilder: (context, index) {
@@ -234,7 +235,7 @@ class CoffeeListPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: width * 0.31,
+            height: width * 0.32,
             child: Stack(
               children: [
                 Align(
@@ -282,8 +283,8 @@ class CoffeeListPage extends StatelessWidget {
                 Text(drink.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 2),
                 Text(
-                  "${drink.caffeinePerMl}mg ~ ${drink.standardVolume}mL",
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6E3D2C)),
+                  "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500, color: Color(0xFF6E3D2C)),
                 ),
               ],
             ),
@@ -296,7 +297,7 @@ class CoffeeListPage extends StatelessWidget {
                 Navigator.pushNamed(
                   context,
                   '/drinkinformation',
-                  arguments: drink.id, // Pass drink ID
+                  arguments: drink, // Pass drink ID
                 );
               },
             ),
