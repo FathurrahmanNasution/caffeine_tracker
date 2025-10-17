@@ -1,12 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ConsumptionLog {
   final String id;
   final String userId;
   final String drinkId;
   final String drinkName;
-  final int servingSize; // mL
-  final double caffeineContent; // mg
+  final int servingSize;
+  final double caffeineContent;
   final DateTime consumedAt;
 
   ConsumptionLog({
@@ -27,7 +25,9 @@ class ConsumptionLog {
       drinkName: map['drinkName'] ?? '',
       servingSize: map['servingSize'] ?? 0,
       caffeineContent: (map['caffeineContent'] ?? 0).toDouble(),
-      consumedAt: (map['consumedAt'] as Timestamp).toDate(),
+      consumedAt: map['consumedAt'] != null
+          ? DateTime.parse(map['consumedAt'])
+          : DateTime.now(),
     );
   }
 
@@ -38,8 +38,7 @@ class ConsumptionLog {
       'drinkName': drinkName,
       'servingSize': servingSize,
       'caffeineContent': caffeineContent,
-      'consumedAt': Timestamp.fromDate(consumedAt),
-      'createdAt': FieldValue.serverTimestamp(),
+      'consumedAt': consumedAt.toIso8601String(),
     };
   }
 }
