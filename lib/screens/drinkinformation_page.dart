@@ -4,6 +4,7 @@ import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DrinkinformationPage extends StatefulWidget {
   const DrinkinformationPage({super.key});
@@ -17,7 +18,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
   final ConsumptionService _consumptionService = ConsumptionService();
 
   DrinkModel? drink;
-  String currentUserId = "USER_ID_HERE";
+  String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
 
   int servingSize = 240;
   double caffeineContent = 0;
