@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class CoffeeListPage extends StatelessWidget {
-  CoffeeListPage({super.key});
+class CoffeeListPage extends StatefulWidget {
+  const CoffeeListPage({super.key});
 
+  @override
+  State<CoffeeListPage> createState() => _CoffeeListPageState();
+}
+
+class _CoffeeListPageState extends State<CoffeeListPage> {
   final DrinkService _drinkService = DrinkService();
+  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserId = "USER_ID_HERE";
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
@@ -52,6 +67,12 @@ class CoffeeListPage extends StatelessWidget {
               child: SizedBox(
                 width: width * 0.9,
                 child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                   style: const TextStyle(color: Color(0xFF5D3A00)),
                   decoration: InputDecoration(
                     hintText: "Search your drinks...",
@@ -90,10 +111,11 @@ class CoffeeListPage extends StatelessWidget {
             ),
 
             SizedBox(height: height * 0.02),
+
             SizedBox(
               height: height * 0.23,
               child: StreamBuilder<List<DrinkModel>>(
-                stream: _drinkService.getFavoriteDrinksForUser(currentUserId),
+                stream: _drinkService.searchFavoriteDrinks(currentUserId, _searchQuery),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -140,7 +162,7 @@ class CoffeeListPage extends StatelessWidget {
               child: Stack(
                 children: [
                   StreamBuilder<List<DrinkModel>>(
-                    stream: _drinkService.getNonFavoriteDrinksForUser(currentUserId),
+                    stream: _drinkService.searchNonFavoriteDrinks(currentUserId, _searchQuery),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -293,12 +315,15 @@ class CoffeeListPage extends StatelessWidget {
             alignment: Alignment.bottomRight,
             child: IconButton(
               icon: const Icon(Icons.add_circle_outline, size: 24, color: Color(0xFF4E8D7C)),
-              onPressed: () {
-                Navigator.pushNamed(
+              onPressed: () async {
+                final result = await Navigator.pushNamed(
                   context,
                   '/drinkinformation',
-                  arguments: drink, // Pass drink ID
+                  arguments: drink,
                 );
+                if (result== true && mounted){
+                  setState(() {});
+                }
               },
             ),
           ),
