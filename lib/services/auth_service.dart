@@ -52,6 +52,7 @@ class AuthService {
             'photoUrl': null,
             'createdAt': FieldValue.serverTimestamp(),
             'authProvider': 'email',
+            'hasCompletedOnboarding': false,
           }, SetOptions(merge: true));
 
           tx.set(unameRef, {
@@ -194,6 +195,11 @@ class AuthService {
     
     return username;
   }
+
+
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
+     await FirebaseFirestore.instance.collection('users').doc(uid).update(data);
+   }
 
   Future<String> _ensureUniqueUsername(String baseUsername) async {
     String username = baseUsername;
