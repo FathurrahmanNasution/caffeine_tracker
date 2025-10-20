@@ -25,7 +25,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _auth = AuthService();
   UserModel? _userProfile;
   bool _loading = true;
@@ -34,16 +33,23 @@ class _DashboardPageState extends State<DashboardPage> {
     Drink(
       name: 'Americano',
       caffeine: '83mg',
-      size: '210ml',
-      time: '9:25 AM',
+      size: '240ml',
+      time: '09:25 AM',
       image: '☕',
     ),
     Drink(
       name: 'Espresso',
       caffeine: '63mg',
-      size: '210ml',
-      time: '04:23 PM',
+      size: '30ml (shot)',
+      time: '02:20 PM',
       image: '☕',
+    ),
+    Drink(
+      name: 'Frappuccino',
+      caffeine: '65mg',
+      size: '355ml',
+      time: '',
+      image: '🥤',
     ),
   ];
 
@@ -81,13 +87,9 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {
       drinks.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Drink deleted successfully')),
-    );
-  }
-
-  void _editDrink(int index) {
-    Navigator.pushNamed(context, '/drinkinformation');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Drink deleted successfully')));
   }
 
   Future<void> _handleSignOut() async {
@@ -110,49 +112,48 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF5EBE0),
-      drawer: _buildDrawer(),
       body: Column(
         children: [
           Container(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
-              left: 0,
-              right: 0,
+              left: 16,
+              right: 16,
               bottom: 8,
             ),
             color: const Color(0xFFD5BBA2),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  icon: const Icon(Icons.menu, color: Colors.black),
-                ),
-                GestureDetector(
-                  onTap: () {},
-                  child: Image.asset(
-                    "assets/images/coffee.png",
-                    height: height * 0.06,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.local_cafe, size: 40);
-                    },
-                  ),
-                ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(left: 10.0),
                   child: GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/profile'),
-                    child: CircleAvatar(
-                      backgroundImage: _userProfile?.photoUrl != null
-                          ? NetworkImage(_userProfile!.photoUrl!)
-                          : null,
-                      child: _userProfile?.photoUrl == null
-                          ? const Icon(Icons.person)
-                          : null,
+                    onTap: () {},
+                    child: Image.asset(
+                      "assets/images/coffee.png",
+                      height: height * 0.06,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.local_cafe, size: 40);
+                      },
                     ),
                   ),
+                ),
+                Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/profile'),
+                      child: CircleAvatar(
+                        backgroundImage: _userProfile?.photoUrl != null
+                            ? NetworkImage(_userProfile!.photoUrl!)
+                            : null,
+                        child: _userProfile?.photoUrl == null
+                            ? const Icon(Icons.person)
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -207,7 +208,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.emoji_food_beverage_outlined),
-            label: "Add Drinks",
+            label: "Drinks",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month_outlined),
@@ -216,90 +217,65 @@ class _DashboardPageState extends State<DashboardPage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
-    );
-  }
-
-  Widget _buildDrawer() {
-    final displayName = _userProfile?.displayName ?? _userProfile?.username ?? 'User';
-    
-    return Drawer(
-      backgroundColor: const Color(0xFFF5EBE0),
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const SizedBox(height: 60),
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Account',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Welcome, $displayName!',
-                  style: const TextStyle(fontSize: 16, color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildDrawerItem('Profile', Icons.person, () {
-            Navigator.pushNamed(context, '/profile');
-          }),
-          _buildDrawerItem('Personal Info', Icons.info, () {
-            Navigator.pushNamed(context, '/personal-info');
-          }),
-          _buildDrawerItem('Change Password', Icons.lock, () {
-            Navigator.pushNamed(context, '/change-password');
-          }),
-          const SizedBox(height: 30),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: OutlinedButton(
-              onPressed: _handleSignOut,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.brown),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: const Text('Sign Out', style: TextStyle(color: Colors.brown)),
-            ),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/coffeelist');
+        },
+        backgroundColor: Colors.brown[800],
+        child: const Icon(Icons.add, color: Colors.white),
       ),
-    );
-  }
-
-  Widget _buildDrawerItem(String title, IconData icon, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.black54),
-      title: Text(title, style: const TextStyle(fontSize: 16, color: Colors.black87)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.black54),
-      onTap: onTap,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildGreeting() {
-    final displayName = _userProfile?.displayName ?? _userProfile?.username ?? 'User';
-    
-    return Column(
+    final displayName =
+        _userProfile?.displayName ?? _userProfile?.username ?? 'User';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Hi there,',
-          style: TextStyle(fontSize: 16, color: Colors.black54),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Hi there,',
+              style: TextStyle(
+                fontSize: 16,
+                color: const Color(0xff42261d),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              displayName,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-        Text(
-          displayName,
-          style: const TextStyle(fontSize: 16, color: Colors.black54),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent, // or any background color you want
+            border: Border.all(
+              color: const Color(0xff42261d), // border color
+              width: 2, // adjust border thickness
+            ),
+            borderRadius: BorderRadius.circular(15),
+          ),
+
+          child: Text(
+            'Oct 17th, 2025',
+            style: TextStyle(
+              fontSize: 12,
+              color: const Color(0xff5b3020),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );
@@ -319,8 +295,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildCaffeineInfo() {
     return const Text(
-      'Today Caffeine in Take: 172g',
-      style: TextStyle(fontSize: 14, color: Colors.black54),
+      'Today Caffeine in Take: 158mg',
+      style: TextStyle(
+        fontSize: 14,
+        color: Color(0xff6e3d2c),
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 
@@ -332,6 +312,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildDrinksSection() {
+    final caffeineLeft = '30 mg';
+    final caffeineColor = const Color(0xffd6ccc2);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -340,21 +322,40 @@ class _DashboardPageState extends State<DashboardPage> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: const Color(0xff4b2c20),
           ),
         ),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF8B4513),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text(
-            'You still need 30 mg of caffeine today!',
-            style: TextStyle(color: Colors.white, fontSize: 12),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 47),
+            decoration: BoxDecoration(
+              color: const Color(0xFF52796F), // background color
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  fontSize: 16, // increased font size
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                children: [
+                  const TextSpan(text: 'You still need '),
+                  TextSpan(
+                    text: '30 mg ',
+                    style: TextStyle(
+                      color: const Color(0xFFD6CCC2), // highlighted color
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const TextSpan(text: 'of caffeine today!'),
+                ],
+              ),
+            ),
           ),
         ),
+
         const SizedBox(height: 15),
         ...drinks.asMap().entries.map((entry) {
           int index = entry.key;
@@ -366,100 +367,105 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildDrinkCard(Drink drink, int index) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD2B48C),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.brown[800],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(drink.image, style: const TextStyle(fontSize: 20)),
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/drinkinformation');
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: const Color(0xffd5bba2),
+          border: Border.all(
+            color: const Color(0xffa67c52), // border color
+            width: 1.0, // adjust border thickness
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      drink.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.brown[800],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(drink.image, style: const TextStyle(fontSize: 24)),
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        drink.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${drink.caffeine} • ${drink.size}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: const Color(0xff42261d),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (drink.time.isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xff6e3d2c),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        drink.time,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const Text(
-                      'mg',
-                      style: TextStyle(fontSize: 12, color: Colors.black54),
-                    ),
                   ],
-                ),
-                Text(
-                  '${drink.caffeine} • ${drink.size}',
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-                const SizedBox(height: 5),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.brown[800],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    drink.time,
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit') {
-                _editDrink(index);
-              } else if (value == 'delete') {
+            GestureDetector(
+              onTap: () {
                 _showDeleteDialog(index);
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, size: 18, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Edit'),
-                  ],
+              },
+              child: Transform.translate(
+                offset: const Offset(
+                  0,
+                  -20.0,
+                ), // move 6 pixels up (increase for higher)
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.black54,
+                    size: 20,
+                  ),
                 ),
               ),
-              const PopupMenuItem<String>(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, size: 18, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
-            child: const Icon(Icons.more_vert, color: Colors.black54),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -535,7 +541,7 @@ class CaffeineChartPainter extends CustomPainter {
 
     final textPainter = TextPainter(
       text: TextSpan(
-        text: 'Americano 4g',
+        text: 'Americano 35mg',
         style: TextStyle(
           color: Colors.brown[800],
           fontSize: 12,
@@ -547,7 +553,7 @@ class CaffeineChartPainter extends CustomPainter {
     textPainter.layout();
     textPainter.paint(canvas, Offset(size.width * 0.3, size.height * 0.25));
 
-    final yLabels = ['0', '1000', '1500', '2000', '2500'];
+    final yLabels = ['0', '50', '100', '150', '200'];
     for (int i = 0; i < yLabels.length; i++) {
       final labelPainter = TextPainter(
         text: TextSpan(
