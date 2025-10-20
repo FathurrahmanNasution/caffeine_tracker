@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -70,8 +72,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
               width: double.infinity,
               color: Colors.brown,
               child: TextButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/dashboard');
+                onPressed: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .update({'hasCompletedOnboarding': true});
+                  }
+                  if (mounted) {
+                    Navigator.pushReplacementNamed(context, '/dashboard');
+                  }
                 },
                 child: const Text(
                   "Get Started",

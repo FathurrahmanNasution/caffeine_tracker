@@ -341,6 +341,11 @@ class _SignUpPageState extends State<SignUpPage> {
       if (!mounted) return;
 
       if (user != null) {
+        // Set hasCompletedOnboarding to true for new sign-up users
+        await _auth.updateUserProfile(user.uid, {
+          'hasCompletedOnboarding': true,
+        });
+        
         _showSnackBar("Account created successfully! Please sign in.");
         Navigator.pushReplacementNamed(context, '/signin');
       } else {
