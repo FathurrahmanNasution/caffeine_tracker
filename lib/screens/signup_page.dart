@@ -219,9 +219,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               );
                             },
                           ),
-                          onPressed: () {
-                            _handleGoogleSignIn();
-                          },
+                          onPressed: _loading ? null : _handleGoogleSignIn,
                         ),
                       ),
                     ),
@@ -366,8 +364,32 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  void _handleGoogleSignIn() {
-    _showSnackBar("Google Sign In coming soon");
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _loading = true);
+    
+    try {
+      final user = await _auth.signInWithGoogle();
+      if (!mounted) return;
+
+      if (user != null) {
+        // Check if user has completed onboarding
+        final userDoc = await _auth.getProfileDoc(user.uid);
+        final hasCompletedOnboarding = userDoc.data()?['hasCompletedOnboarding'] ?? false;
+        
+        if (hasCompletedOnboarding) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/onboarding');
+        }
+      } else {
+        _showSnackBar("Google Sign In was cancelled");
+      }
+    } catch (err) {
+      if (!mounted) return;
+      _showSnackBar(err.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _showSnackBar(String message) {
