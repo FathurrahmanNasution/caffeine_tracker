@@ -1,10 +1,12 @@
 import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _fire = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   User? get currentUser => _auth.currentUser;
 
@@ -49,6 +51,7 @@ class AuthService {
             'username': uname,
             'photoUrl': null,
             'createdAt': FieldValue.serverTimestamp(),
+            'authProvider': 'email',
           }, SetOptions(merge: true));
 
           tx.set(unameRef, {
@@ -96,7 +99,129 @@ class AuthService {
     return UserModel.fromMap(user.uid, userDoc.data());
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<UserModel?> signInWithGoogle() async {
+    try {
+      // Trigger the Google Sign In flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        // User cancelled the sign in
+        return null;
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      
+      if (user == null) return null;
+
+      // Check if this is a new user
+      final userRef = _fire.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        // Create new user document for first-time Google sign in
+        final email = user.email ?? '';
+        final displayName = user.displayName ?? '';
+        
+        // Generate a username from email or displayName
+        String generatedUsername = _generateUsernameFromEmail(email);
+        
+        // Ensure username is unique
+        generatedUsername = await _ensureUniqueUsername(generatedUsername);
+
+        await userRef.set({
+          'uid': user.uid,
+          'email': email,
+          'displayName': displayName,
+          'username': generatedUsername,
+          'photoUrl': user.photoURL,
+          'createdAt': FieldValue.serverTimestamp(),
+          'authProvider': 'google',
+          'hasCompletedOnboarding': false,
+        });
+
+        // Create username mapping
+        await _fire.collection('usernames').doc(generatedUsername).set({
+          'uid': user.uid,
+          'email': email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Update existing user's photo if changed
+        if (user.photoURL != null) {
+          await userRef.update({
+            'photoUrl': user.photoURL,
+          });
+        }
+      }
+
+      final updatedDoc = await userRef.get();
+      return UserModel.fromMap(user.uid, updatedDoc.data());
+    } on FirebaseAuthException catch (e) {
+      throw Exception('Google Sign In failed: ${e.message}');
+    } catch (e) {
+      throw Exception('Google Sign In error: $e');
+    }
+  }
+
+  String _generateUsernameFromEmail(String email) {
+    // Extract username part from email (before @)
+    String username = email.split('@')[0];
+    
+    // Remove any non-alphanumeric characters except underscore
+    username = username.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    
+    // Convert to lowercase
+    username = username.toLowerCase();
+    
+    // Ensure it's between 3-30 characters
+    if (username.length < 3) {
+      username = '${username}_user';
+    }
+    if (username.length > 30) {
+      username = username.substring(0, 30);
+    }
+    
+    return username;
+  }
+
+  Future<String> _ensureUniqueUsername(String baseUsername) async {
+    String username = baseUsername;
+    int counter = 1;
+    
+    while (true) {
+      final unameDoc = await _fire.collection('usernames').doc(username).get();
+      if (!unameDoc.exists) {
+        return username;
+      }
+      
+      // Username exists, try with a number suffix
+      username = '${baseUsername}_$counter';
+      counter++;
+      
+      // Ensure it doesn't exceed 30 characters
+      if (username.length > 30) {
+        username = '${baseUsername.substring(0, 25)}_$counter';
+      }
+    }
+  }
+
+  Future<void> signOut() async {
+    await Future.wait([
+      _auth.signOut(),
+      _googleSignIn.signOut(),
+    ]);
+  }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getProfileDoc(String uid) {
     return _fire.collection('users').doc(uid).get();
