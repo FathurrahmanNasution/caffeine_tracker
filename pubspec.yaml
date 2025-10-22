@@ -36,5 +36,4 @@ flutter:
           weight: 700
 
   assets:
-    - assets/images/google_logo.png
-    - assets/images/coffee.png
+    - assets/images/
