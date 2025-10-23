@@ -314,60 +314,61 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Future<void> _handleSignUp() async {
-    final username = usernameController.text.trim();
-    final email = emailController.text.trim();
-    final password = passwordController.text;
+  // Update bagian _handleSignUp di signup_page.dart
 
-    if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      _showSnackBar("Please fill in all fields");
-      return;
-    }
+Future<void> _handleSignUp() async {
+  final username = usernameController.text.trim();
+  final email = emailController.text.trim();
+  final password = passwordController.text;
 
-    if (password.length < 6) {
-      _showSnackBar("Password must be at least 6 characters");
-      return;
-    }
-
-    setState(() => _loading = true);
-
-    try {
-      final user = await _auth.signUpWithUsername(
-        username: username,
-        email: email,
-        password: password,
-        displayName: null,
-      );
-      if (!mounted) return;
-
-      if (user != null) {
-        // Set hasCompletedOnboarding to true for new sign-up users
-        await _auth.updateUserProfile(user.uid, {
-          'hasCompletedOnboarding': true,
-        });
-        
-        _showSnackBar("Account created successfully! Please sign in.");
-        Navigator.pushReplacementNamed(context, '/signin');
-      } else {
-        _showSnackBar("Sign up failed. Please try again.");
-      }
-    } catch (err) {
-      if (!mounted) return;
-      
-      final msg = err.toString();
-      if (msg.contains('Username already taken')) {
-        _showSnackBar('Username already taken. Choose another.');
-      } else if (msg.contains('Email already in use')) {
-        _showSnackBar('Email already in use.');
-      } else if (msg.contains('Username invalid')) {
-        _showSnackBar('Username must be 3-30 characters (a-z, 0-9, underscore)');
-      } else {
-        _showSnackBar(msg.replaceAll('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+  if (username.isEmpty || email.isEmpty || password.isEmpty) {
+    _showSnackBar("Please fill in all fields");
+    return;
   }
+
+  if (password.length < 6) {
+    _showSnackBar("Password must be at least 6 characters");
+    return;
+  }
+
+  setState(() => _loading = true);
+
+  try {
+    final user = await _auth.signUpWithUsername(
+      username: username,
+      email: email,
+      password: password,
+      displayName: null,
+    );
+    if (!mounted) return;
+
+    if (user != null) {
+      // Navigate to email verification page
+      Navigator.pushReplacementNamed(
+        context,
+        '/email-verification',
+        arguments: email,
+      );
+    } else {
+      _showSnackBar("Sign up failed. Please try again.");
+    }
+  } catch (err) {
+    if (!mounted) return;
+    
+    final msg = err.toString();
+    if (msg.contains('Username already taken')) {
+      _showSnackBar('Username already taken. Choose another.');
+    } else if (msg.contains('Email already in use')) {
+      _showSnackBar('Email already in use.');
+    } else if (msg.contains('Username invalid')) {
+      _showSnackBar('Username must be 3-30 characters (a-z, 0-9, underscore)');
+    } else {
+      _showSnackBar(msg.replaceAll('Exception: ', ''));
+    }
+  } finally {
+    if (mounted) setState(() => _loading = false);
+  }
+}
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _loading = true);

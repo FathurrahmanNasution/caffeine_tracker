@@ -3,6 +3,7 @@ import 'package:caffeine_tracker/screens/admin_add_drink_page.dart';
 import 'package:caffeine_tracker/screens/coffeelist_page.dart';
 import 'package:caffeine_tracker/screens/dashboard_page.dart';
 import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
+import 'package:caffeine_tracker/screens/email_verification_page.dart';
 import 'package:caffeine_tracker/screens/landing_page.dart';
 import 'package:caffeine_tracker/screens/onboarding_page.dart';
 import 'package:caffeine_tracker/screens/profile_page.dart';
@@ -34,6 +35,18 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: '/',
+      onGenerateRoute: (settings) {
+        // Handle email verification route with arguments
+        if (settings.name == '/email-verification') {
+          final email = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => EmailVerificationPage(email: email),
+          );
+        }
+        
+        // Handle other routes normally
+        return null;
+      },
       routes: {
         '/': (context) => const SplashScreen(),
         '/landing': (context) => const LandingPage(),
