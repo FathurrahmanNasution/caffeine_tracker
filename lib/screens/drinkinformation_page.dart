@@ -243,12 +243,16 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              drink?.name ?? "Unknown Drink", // ← Update
-                              style: const TextStyle(
-                                fontSize: 38,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF000000),
+                            Expanded(
+                              child: Text(
+                                drink?.name ?? "Unknown Drink", // ← Update
+                                style: const TextStyle(
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF000000),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.visible,
                               ),
                             ),
                             IconButton(
@@ -297,7 +301,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          drink?.information ?? "No information available", // ← Update
+                          drink?.information ?? "No information available",
                           style: const TextStyle(
                             fontSize: 14,
                             height: 1.4,
