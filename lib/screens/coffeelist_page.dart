@@ -59,7 +59,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: height * 0.03),
+            SizedBox(height: height * 0.02),
 
             // 🔍 Search bar
             Align(
@@ -101,7 +101,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
               ),
             ),
 
-            SizedBox(height: height * 0.04),
+            SizedBox(height: height * 0.025),
 
             // Favorites section
             const Padding(
@@ -113,7 +113,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
             SizedBox(height: height * 0.02),
 
             SizedBox(
-              height: height * 0.23,
+              height: height * 0.24,
               child: StreamBuilder<List<DrinkModel>>(
                 stream: _drinkService.searchFavoriteDrinks(currentUserId, _searchQuery),
                 builder: (context, snapshot) {
@@ -135,7 +135,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                     itemBuilder: (context, index) {
                       final drink = favorites[index];
                       return SizedBox(
-                        width: width * 0.3,
+                        width: width * 0.32,
                         child: _buildCoffeeCard(
                             context,
                             drink,
@@ -148,7 +148,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
               ),
             ),
 
-            SizedBox(height: height * 0.03),
+            SizedBox(height: height * 0.025),
 
             // All Drinks section
             const Padding(
@@ -179,8 +179,8 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                       return GridView.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: width < 360 ? 2 : 3,
-                          childAspectRatio: 0.59,
-                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.56,
+                          mainAxisSpacing: 15,
                           crossAxisSpacing: 3,
                         ),
                         itemCount: drinks.length,
@@ -205,7 +205,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pushNamed(context, '/admin');
+                        Navigator.pushNamed(context, '/addotherdrink');
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -247,7 +247,8 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
   Widget _buildCoffeeCard(BuildContext context, DrinkModel drink, {bool showLove = false}) {
     final width = MediaQuery.of(context).size.width;
     return Container(
-      margin: const EdgeInsets.only(right: 12),
+
+      margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
         color: Colors.white70,
         borderRadius: BorderRadius.circular(15),
@@ -257,7 +258,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: width * 0.32,
+            height: width * 0.3,
             child: Stack(
               children: [
                 Align(
@@ -265,7 +266,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                   child: drink.imageUrl.startsWith('http')
                       ? Image.network(
                     drink.imageUrl,
-                    height: width * 0.21,
+                    height: width * 0.31,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Image.asset(
@@ -281,7 +282,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                   )
                       : Image.asset(
                     drink.imageUrl,
-                    height: width * 0.21,
+                    height: width * 0.25,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Image.asset(
@@ -302,8 +303,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(drink.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 2),
+                Text(drink.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.3)),
                 Text(
                   "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
                   style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500, color: Color(0xFF6E3D2C)),
@@ -311,10 +311,13 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
               ],
             ),
           ),
+          const Spacer(),
           Align(
             alignment: Alignment.bottomRight,
             child: IconButton(
               icon: const Icon(Icons.add_circle_outline, size: 24, color: Color(0xFF4E8D7C)),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
               onPressed: () async {
                 final result = await Navigator.pushNamed(
                   context,

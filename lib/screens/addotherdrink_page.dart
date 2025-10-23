@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:caffeine_tracker/services/consumption_service.dart';
+import 'package:caffeine_tracker/model/consumption_log.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddotherdrinkPage extends StatefulWidget {
   const AddotherdrinkPage({super.key});
@@ -9,16 +12,19 @@ class AddotherdrinkPage extends StatefulWidget {
 }
 
 class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
+  final ConsumptionService _consumptionService = ConsumptionService();
+  String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
+
   bool isFavorite = false;
 
-  int servingSize = 240; // default serving
-  double caffeineContent = 0; // hasil perhitungan
-  bool isCaffeineEdited = false; // penanda user edit manual
-  DateTime selectedDateTime = DateTime.now(); // tambah variable untuk datetime
+  int servingSize = 240;
+  double caffeineContent = 0;
+  bool isCaffeineEdited = false;
+  DateTime selectedDateTime = DateTime.now();
 
   late TextEditingController _servingController;
   late TextEditingController _caffeineController;
-  late TextEditingController _drinkNameController; // tambahan controller untuk drink name
+  late TextEditingController _drinkNameController;
 
   @override
   void initState() {
@@ -28,14 +34,14 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
     _servingController = TextEditingController(text: "$servingSize");
     _caffeineController =
         TextEditingController(text: caffeineContent.toStringAsFixed(1));
-    _drinkNameController = TextEditingController(); // inisialisasi controller drink name
+    _drinkNameController = TextEditingController();
   }
 
   @override
   void dispose() {
     _servingController.dispose();
     _caffeineController.dispose();
-    _drinkNameController.dispose(); // dispose controller drink name
+    _drinkNameController.dispose();
     super.dispose();
   }
 
@@ -83,7 +89,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
     if (number != null) {
       setState(() {
         caffeineContent = number;
-        isCaffeineEdited = true; // tandai kalau user edit manual
+        isCaffeineEdited = true;
       });
     }
   }
@@ -481,7 +487,6 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
                           ],
                         ),
 
-                        // Tambahan padding untuk memberikan ruang sebelum tombol save
                         SizedBox(height: 100),
                       ],
                     ),
@@ -508,11 +513,35 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () {
-                debugPrint("Drink name: ${_drinkNameController.text}");
-                debugPrint("Serving size: $servingSize ml");
-                debugPrint("Caffeine content: $caffeineContent mg");
-                debugPrint("Date time: $selectedDateTime");
+              onPressed: () async {
+                // Validasi input
+                if (_drinkNameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter drink name')),
+                  );
+                  return;
+                }
+
+                // Buat consumption log
+                final log = ConsumptionLog(
+                  id: '',
+                  userId: currentUserId,
+                  drinkId: 'other',
+                  drinkName: _drinkNameController.text.trim(),
+                  servingSize: servingSize,
+                  caffeineContent: caffeineContent,
+                  consumedAt: selectedDateTime,
+                );
+
+                // Save ke database
+                await _consumptionService.addConsumption(log);
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Consumption saved!')),
+                  );
+                  Navigator.pop(context);
+                }
               },
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
