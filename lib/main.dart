@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -43,7 +42,7 @@ class MyApp extends StatelessWidget {
             builder: (context) => EmailVerificationPage(email: email),
           );
         }
-        
+
         // Handle other routes normally
         return null;
       },
@@ -53,7 +52,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpPage(),
         '/signin': (context) => const SignInPage(),
         '/onboarding': (context) => const OnboardingPage(),
-        '/tracker': (context) => const TrackerPage(),
+        '/logs': (context) => const TrackerPage(),
         '/coffeelist': (context) => CoffeeListPage(),
         '/drinkinformation': (context) => const DrinkinformationPage(),
         '/addotherdrink': (context) => const AddotherdrinkPage(),
