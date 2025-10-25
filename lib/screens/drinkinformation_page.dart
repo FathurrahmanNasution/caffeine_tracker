@@ -237,7 +237,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: height * 0.07),
+                        SizedBox(height: height * 0.05),
 
                         // Nama minuman + favorit
                         Row(
@@ -245,7 +245,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                drink?.name ?? "Unknown Drink", // ← Update
+                                drink?.name ?? "Unknown Drink",
                                 style: const TextStyle(
                                   fontSize: 38,
                                   fontWeight: FontWeight.bold,
