@@ -521,26 +521,29 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
                             onPressed: () async {
-                              if (drink != null) {
-                                final log = ConsumptionLog(
-                                  id: '',
-                                  userId: currentUserId,
-                                  drinkId: drink!.id,
-                                  drinkName: drink!.name,
-                                  servingSize: servingSize,
-                                  caffeineContent: caffeineContent,
-                                  consumedAt: selectedDateTime,
-                                );
+                              if (drink == null) return;
 
-                                await _consumptionService.addConsumption(log);
+                              final log = ConsumptionLog(
+                                id: '',
+                                userId: currentUserId,
+                                drinkId: drink!.id,
+                                drinkName: drink!.name,
+                                servingSize: servingSize,
+                                caffeineContent: caffeineContent,
+                                consumedAt: selectedDateTime,
+                              );
 
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Consumption saved!')),
-                                  );
-                                  Navigator.pop(context);
-                                }
-                              }
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+
+                              await _consumptionService.addConsumption(log);
+
+                              if (!mounted) return;
+
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('Consumption saved!')),
+                              );
+                              navigator.pop();
                             },
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
