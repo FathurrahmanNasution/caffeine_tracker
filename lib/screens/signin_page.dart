@@ -107,12 +107,10 @@ class _SignInPageState extends State<SignInPage> {
                     const SizedBox(height: 8),
 
                     // Forgot Password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () {
-                          _handleForgotPassword();
-                        },
+                    GestureDetector(
+                      onTap: _handleForgotPassword,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
                         child: const Text(
                           "Forgot password?",
                           style: TextStyle(
@@ -146,7 +144,9 @@ class _SignInPageState extends State<SignInPage> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(
@@ -310,6 +310,10 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
+  void _handleForgotPassword() {
+    Navigator.pushNamed(context, '/accountauthorization');
+  }
+
   Future<void> _handleSignIn() async {
     final username = usernameController.text.trim();
     final password = passwordController.text;
@@ -320,7 +324,7 @@ class _SignInPageState extends State<SignInPage> {
     }
 
     setState(() => _loading = true);
-    
+
     try {
       final user = await _auth.signInWithUsername(username, password);
       if (!mounted) return;
@@ -328,8 +332,9 @@ class _SignInPageState extends State<SignInPage> {
       if (user != null) {
         // Check if user has completed onboarding
         final userDoc = await _auth.getProfileDoc(user.uid);
-        final hasCompletedOnboarding = userDoc.data()?['hasCompletedOnboarding'] ?? false;
-        
+        final hasCompletedOnboarding =
+            userDoc.data()?['hasCompletedOnboarding'] ?? false;
+
         if (hasCompletedOnboarding) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         } else {
@@ -348,7 +353,7 @@ class _SignInPageState extends State<SignInPage> {
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _loading = true);
-    
+
     try {
       final user = await _auth.signInWithGoogle();
       if (!mounted) return;
@@ -356,8 +361,9 @@ class _SignInPageState extends State<SignInPage> {
       if (user != null) {
         // Check if user has completed onboarding
         final userDoc = await _auth.getProfileDoc(user.uid);
-        final hasCompletedOnboarding = userDoc.data()?['hasCompletedOnboarding'] ?? false;
-        
+        final hasCompletedOnboarding =
+            userDoc.data()?['hasCompletedOnboarding'] ?? false;
+
         if (hasCompletedOnboarding) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         } else {
@@ -372,10 +378,6 @@ class _SignInPageState extends State<SignInPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _handleForgotPassword() {
-    _showSnackBar("Forgot password feature coming soon");
   }
 
   void _showSnackBar(String message) {
