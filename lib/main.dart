@@ -1,5 +1,7 @@
+import 'package:caffeine_tracker/screens/account_authorization_page.dart';
 import 'package:caffeine_tracker/screens/addotherdrink_page.dart';
 import 'package:caffeine_tracker/screens/admin_add_drink_page.dart';
+import 'package:caffeine_tracker/screens/change_password_page.dart';
 import 'package:caffeine_tracker/screens/coffeelist_page.dart';
 import 'package:caffeine_tracker/screens/dashboard_page.dart';
 import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
@@ -34,6 +36,22 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/landing': (context) => const LandingPage(),
+        '/signup': (context) => const SignUpPage(),
+        '/signin': (context) => const SignInPage(),
+        '/accountauthorization': (context) => const AccountAuthorizationPage(),
+        '/change-password': (context) => const ChangePasswordPage(),
+        '/onboarding': (context) => const OnboardingPage(),
+        '/logs': (context) => const TrackerPage(),
+        '/coffeelist': (context) => const CoffeeListPage(),
+        '/drinkinformation': (context) => const DrinkinformationPage(),
+        '/addotherdrink': (context) => const AddotherdrinkPage(),
+        '/dashboard': (context) => const DashboardPage(),
+        '/profile': (context) => const ProfilePage(),
+        '/admin': (context) => const AdminAddDrinkPage(),
+      },
       onGenerateRoute: (settings) {
         // Handle email verification route with arguments
         if (settings.name == '/email-verification') {
@@ -43,22 +61,8 @@ class MyApp extends StatelessWidget {
           );
         }
 
-        // Handle other routes normally
+        // Return null to let the routes map handle it
         return null;
-      },
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/landing': (context) => const LandingPage(),
-        '/signup': (context) => const SignUpPage(),
-        '/signin': (context) => const SignInPage(),
-        '/onboarding': (context) => const OnboardingPage(),
-        '/logs': (context) => const TrackerPage(),
-        '/coffeelist': (context) => CoffeeListPage(),
-        '/drinkinformation': (context) => const DrinkinformationPage(),
-        '/addotherdrink': (context) => const AddotherdrinkPage(),
-        '/dashboard': (context) => const DashboardPage(),
-        '/profile': (context) => const ProfilePage(),
-        '/admin': (context) => const AdminAddDrinkPage(),
       },
     );
   }
