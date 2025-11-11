@@ -1,8 +1,12 @@
+import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
+import 'package:caffeine_tracker/widgets/consumption_form.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
+import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import '../widgets/app_top_navigation.dart';
 
 class AddotherdrinkPage extends StatefulWidget {
   const AddotherdrinkPage({super.key});
@@ -12,10 +16,12 @@ class AddotherdrinkPage extends StatefulWidget {
 }
 
 class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
+  final _auth = AuthService();
   final ConsumptionService _consumptionService = ConsumptionService();
-  String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
+  UserModel? _userProfile;
+  bool _loading = true;
 
-  bool isFavorite = false;
+  String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
 
   int servingSize = 240;
   double caffeineContent = 0;
@@ -29,12 +35,37 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
   @override
   void initState() {
     super.initState();
+    _loadUserProfile();
     caffeineContent = (50 / 200) * servingSize;
 
     _servingController = TextEditingController(text: "$servingSize");
     _caffeineController =
         TextEditingController(text: caffeineContent.toStringAsFixed(1));
     _drinkNameController = TextEditingController();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/signin');
+      }
+      return;
+    }
+
+    try {
+      final doc = await _auth.getProfileDoc(user.uid);
+      if (mounted) {
+        setState(() {
+          _userProfile = UserModel.fromMap(user.uid, doc.data());
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   @override
@@ -94,411 +125,93 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
     }
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final DateFormat dateFormatter = DateFormat('EEEE, dd MMM yyyy');
-    final DateFormat timeFormatter = DateFormat('hh:mm a');
-    return '${dateFormatter.format(dateTime)}   ${timeFormatter.format(dateTime)}';
+  Future<void> _selectDateTime() async {
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDateTime,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+
+    if (selectedDate != null) {
+      final TimeOfDay? selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(selectedDateTime),
+      );
+
+      if (selectedTime != null) {
+        setState(() {
+          selectedDateTime = DateTime(
+            selectedDate.year,
+            selectedDate.month,
+            selectedDate.day,
+            selectedTime.hour,
+            selectedTime.minute,
+          );
+        });
+      }
+    }
+  }
+
+  Future<void> _saveDrink() async {
+    if (_drinkNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter drink name')),
+      );
+      return;
+    }
+
+    final log = ConsumptionLog(
+      id: '',
+      userId: currentUserId,
+      drinkId: 'other',
+      drinkName: _drinkNameController.text.trim(),
+      servingSize: servingSize,
+      caffeineContent: caffeineContent,
+      consumedAt: selectedDateTime,
+    );
+
+    await _consumptionService.addConsumption(log);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Consumption saved!')),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final height = size.height;
-    final width = size.width;
+
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5EBE0),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          // Fixed top navigation bar
-          Container(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 0,
-              right: 0,
-              bottom: 8,
-            ),
-            color: const Color(0xFFD5BBA2),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.menu, color: Colors.black),
-                ),
-                GestureDetector(
-                  onTap: () {},
-                  child: Image.asset(
-                    "assets/images/coffee.png",
-                    height: height * 0.06,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const CircleAvatar(
-                      backgroundImage:
-                      AssetImage("assets/images/profile.png"),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          AppTopNavigation(
+            userProfile: _userProfile,
           ),
-
-          // Scrollable content
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // Header dengan background dan gambar kopi
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Background AppBar
-                      Container(
-                        height: height * 0.15,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFD5BBA2),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(70),
-                            bottomRight: Radius.circular(70),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color.fromRGBO(0, 0, 0, 0.2),
-                              blurRadius: 4,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Lingkaran background
-                      Positioned(
-                        bottom: -height * 0.1,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: height * 0.23,
-                          width: height * 0.23,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF5EBE0),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-
-                      // Gambar minuman
-                      Positioned(
-                        bottom: -height * 0.05,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Image.asset(
-                            "assets/images/coffee.png",
-                            height: height * 0.15,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: height * 0.07),
-
-                        // Nama minuman + favorit
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Other Drinks",
-                              style: TextStyle(
-                                fontSize: 38,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF000000),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const Divider(
-                          color: Color(0xFF61412D),
-                          thickness: 1.6,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Drink Name Field
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Drink Name",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF42261D),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color.fromRGBO(255, 255, 255, 0.7),
-                                border: Border.all(
-                                  color: const Color(0xFFD6CCC2),
-                                  width: 2.0,
-                                ),
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _drinkNameController,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        hintText: "Enter drink name",
-                                        hintStyle: TextStyle(
-                                          color: Color(0xFF9E8B7B),
-                                          fontSize: 16,
-                                        ),
-                                        contentPadding: EdgeInsets.symmetric(vertical: 12),
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.edit,
-                                    color: Color(0xFFD6CCC2),
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Serving size
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Enter serving size",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF42261D),
-                              ),
-                            ),
-                            Container(
-                              width: width * 0.37,
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xFFA67C52),
-                                  width: 2.0,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove),
-                                    onPressed: _decrement,
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  ),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _servingController,
-                                      textAlign: TextAlign.center,
-                                      keyboardType: TextInputType.number,
-                                      onChanged: _onServingChanged,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
-                                  ),
-                                  const Text("mL", style: TextStyle(fontWeight: FontWeight.bold)),
-                                  IconButton(
-                                    icon: const Icon(Icons.add),
-                                    onPressed: _increment,
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Caffeine content
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Caffeine Content",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF42261D),
-                              ),
-                            ),
-                            Container(
-                              width: width * 0.37,
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 18),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD6CCC2),
-                                border: Border.all(
-                                  color: const Color(0xFFA67C52),
-                                  width: 2.0,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.coffee, size: 23),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _caffeineController,
-                                      textAlign: TextAlign.center,
-                                      keyboardType: TextInputType.number,
-                                      onChanged: _onCaffeineChanged,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
-                                  ),
-                                  const Text("mg", style: TextStyle(fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // Time taken
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.access_time, size: 18, color: Colors.black),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "Time taken",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            GestureDetector(
-                              onTap: () async {
-                                final DateTime? selectedDate = await showDatePicker(
-                                  context: context,
-                                  initialDate: selectedDateTime,
-                                  firstDate: DateTime(2020),
-                                  lastDate: DateTime(2030),
-                                );
-
-                                if (selectedDate != null) {
-                                  final TimeOfDay? selectedTime = await showTimePicker(
-                                    context: context,
-                                    initialTime: TimeOfDay.fromDateTime(selectedDateTime),
-                                  );
-
-                                  if (selectedTime != null) {
-                                    setState(() {
-                                      selectedDateTime = DateTime(
-                                        selectedDate.year,
-                                        selectedDate.month,
-                                        selectedDate.day,
-                                        selectedTime.hour,
-                                        selectedTime.minute,
-                                      );
-                                    });
-                                  }
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: const Color.fromRGBO(255, 255, 255, 0.5),
-                                  borderRadius: BorderRadius.circular(5),
-                                  border: Border.all(
-                                    color: const Color(0xFFE8DDD4),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      _formatDateTime(selectedDateTime),
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF786656),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    const Icon(
-                                      Icons.keyboard_arrow_down,
-                                      color: Color(0xFF6E3D2C),
-                                      size: 20,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 100),
-                      ],
-                    ),
-                  ),
+                  _buildHeader(height),
+                  _buildContent(height),
                 ],
               ),
             ),
           ),
         ],
       ),
-
-      // Fixed Save button at bottom
       bottomSheet: Container(
         color: const Color(0xFFF5EBE0),
         padding: const EdgeInsets.fromLTRB(35, 16, 35, 16),
@@ -513,44 +226,11 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () async {
-                // Validasi input
-                if (_drinkNameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter drink name')),
-                  );
-                  return;
-                }
-
-                // Buat consumption log
-                final log = ConsumptionLog(
-                  id: '',
-                  userId: currentUserId,
-                  drinkId: 'other',
-                  drinkName: _drinkNameController.text.trim(),
-                  servingSize: servingSize,
-                  caffeineContent: caffeineContent,
-                  consumedAt: selectedDateTime,
-                );
-
-                // Save ke database
-                await _consumptionService.addConsumption(log);
-
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Consumption saved!')),
-                  );
-                  Navigator.pop(context);
-                }
-              },
+              onPressed: _saveDrink,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.add_circle_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
                   SizedBox(width: 4),
                   Text(
                     "Save",
@@ -566,32 +246,150 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
+    );
+  }
 
-      // Bottom Navigation
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 1,
-        selectedItemColor: const Color(0xFF6E3D2C),
-        unselectedItemColor: const Color(0xFFA67C52),
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
+  Widget _buildHeader(double height) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          height: height * 0.15,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: Color(0xFFD5BBA2),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(70),
+              bottomRight: Radius.circular(70),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.2),
+                blurRadius: 4,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_food_beverage_outlined),
-            label: "Add Drinks",
+        ),
+        Positioned(
+          bottom: -height * 0.1,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: height * 0.23,
+            width: height * 0.23,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5EBE0),
+              shape: BoxShape.circle,
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: "Logs",
+        ),
+        Positioned(
+          bottom: -height * 0.05,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Image.asset(
+              "assets/images/coffee.png",
+              height: height * 0.15,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.local_cafe, size: 80),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(double height) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: height * 0.07),
+          const Text(
+            "Other Drinks",
+            style: TextStyle(
+              fontSize: 38,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF000000),
+            ),
           ),
+          const Divider(color: Color(0xFF61412D), thickness: 1.6),
+          const SizedBox(height: 20),
+
+          // Drink Name Field
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Drink Name",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF42261D),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(255, 255, 255, 0.7),
+                  border: Border.all(
+                    color: const Color(0xFFD6CCC2),
+                    width: 2.0,
+                  ),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _drinkNameController,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: "Enter drink name",
+                          hintStyle: TextStyle(
+                            color: Color(0xFF9E8B7B),
+                            fontSize: 16,
+                          ),
+                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.edit,
+                      color: Color(0xFFD6CCC2),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Consumption Form Widget
+          ConsumptionForm(
+            servingSize: servingSize,
+            caffeineContent: caffeineContent,
+            selectedDateTime: selectedDateTime,
+            servingController: _servingController,
+            caffeineController: _caffeineController,
+            onIncrement: _increment,
+            onDecrement: _decrement,
+            onServingChanged: _onServingChanged,
+            onCaffeineChanged: _onCaffeineChanged,
+            onSelectDateTime: _selectDateTime,
+          ),
+          const SizedBox(height: 100),
         ],
       ),
     );
