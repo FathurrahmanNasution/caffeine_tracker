@@ -1,6 +1,11 @@
+import 'package:caffeine_tracker/model/user_model.dart';
+import 'package:caffeine_tracker/services/auth_service.dart';
+import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
+import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
+import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
+import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'dart:ui' as ui;
 
 class TrackerPage extends StatefulWidget {
   const TrackerPage({super.key});
@@ -10,6 +15,10 @@ class TrackerPage extends StatefulWidget {
 }
 
 class _TrackerPageState extends State<TrackerPage> {
+  final _auth = AuthService();
+  UserModel? _userProfile;
+  bool _loading = true;
+
   DateTime selectedDate = DateTime(2026, 8, 15);
   String sortBy = 'Weekly';
   String filterWeek = 'First Week';
@@ -40,6 +49,114 @@ class _TrackerPageState extends State<TrackerPage> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/signin');
+      }
+      return;
+    }
+
+    try {
+      final doc = await _auth.getProfileDoc(user.uid);
+      if (mounted) {
+        setState(() {
+          _userProfile = UserModel.fromMap(user.uid, doc.data());
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  // Data untuk chart berdasarkan sortBy
+  Map<dynamic, double> _getChartData() {
+    if (sortBy == 'Weekly') {
+      // Weekly data (7 days)
+      return {
+        0: 150.0,
+        1: 180.0,
+        2: 120.0,
+        3: 200.0,
+        4: 160.0,
+        5: 140.0,
+        6: 100.0,
+      };
+    } else if (sortBy == 'Monthly') {
+      // Monthly data (12 months)
+      return {
+        0: 2500.0,
+        1: 2800.0,
+        2: 3000.0,
+        3: 2700.0,
+        4: 3200.0,
+        5: 2900.0,
+        6: 3100.0,
+        7: 2600.0,
+        8: 2800.0,
+        9: 3000.0,
+        10: 2700.0,
+        11: 2900.0,
+      };
+    } else {
+      // Yearly data (multiple years)
+      return {
+        '2023': 30000.0,
+        '2024': 35000.0,
+        '2025': 32000.0,
+        '2026': 28000.0,
+      };
+    }
+  }
+
+  ChartType _getChartType() {
+    if (sortBy == 'Weekly') {
+      return ChartType.weekly;
+    } else if (sortBy == 'Monthly') {
+      return ChartType.monthly;
+    } else {
+      return ChartType.yearly;
+    }
+  }
+
+  List<String> _getChartLabels() {
+    if (sortBy == 'Weekly') {
+      return ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    } else if (sortBy == 'Monthly') {
+      return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    } else {
+      return ['2023', '2024', '2025', '2026'];
+    }
+  }
+
+  void _handleChartTap(dynamic key) {
+    String message = '';
+    if (sortBy == 'Weekly') {
+      final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      message = 'Tapped on ${days[key]}';
+    } else if (sortBy == 'Monthly') {
+      final months = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      message = 'Tapped on ${months[key]}';
+    } else {
+      message = 'Tapped on year $key';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 1)),
+    );
+  }
+
   List<DateTime> _generateMonthDates() {
     final year = selectedDate.year;
     final month = selectedDate.month;
@@ -47,7 +164,7 @@ class _TrackerPageState extends State<TrackerPage> {
 
     return List.generate(
       daysInMonth,
-      (index) => DateTime(year, month, index + 1),
+          (index) => DateTime(year, month, index + 1),
     );
   }
 
@@ -199,54 +316,66 @@ class _TrackerPageState extends State<TrackerPage> {
     );
   }
 
+  void _deleteDrink(int index) {
+    setState(() {
+      drinks.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Drink deleted successfully'))
+    );
+  }
+
+  void _showDeleteDialog(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5EBE0),
+          title: const Text(
+            'Delete Drink',
+            style: TextStyle(color: Color(0xFF4B2C20)),
+          ),
+          content: const Text(
+            'Are you sure you want to delete this drink?',
+            style: TextStyle(color: Color(0xFF6E3D2C)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF6E3D2C)),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteDrink(index);
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final height = size.height;
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5EBE0),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          // Top Navigation Bar
-          Container(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 16,
-              right: 16,
-              bottom: 8,
-            ),
-            color: const Color(0xFFD5BBA2),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 10.0),
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: Image.asset(
-                      "assets/images/coffee.png",
-                      height: height * 0.06,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.local_cafe, size: 40);
-                      },
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/profile'),
-                      child: const CircleAvatar(
-                        backgroundColor: Color(0xFF6E3D2C),
-                        child: Icon(Icons.person, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          // Top Navigation Bar menggunakan AppTopNavigation widget
+          AppTopNavigation(
+            userProfile: _userProfile,
           ),
           // Rest of the content
           Expanded(
@@ -260,7 +389,12 @@ class _TrackerPageState extends State<TrackerPage> {
                   const SizedBox(height: 20),
                   _buildSortBySection(),
                   const SizedBox(height: 10),
-                  _buildChart(),
+                  CaffeineChart(
+                    data: _getChartData(),
+                    type: _getChartType(),
+                    labels: _getChartLabels(),
+                    onTap: _handleChartTap,
+                  ),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -268,44 +402,7 @@ class _TrackerPageState extends State<TrackerPage> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 2,
-        selectedItemColor: const Color(0xFF6E3D2C),
-        unselectedItemColor: const Color(0xFFA67C52),
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        onTap: (int index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/dashboard');
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/coffeelist');
-              break;
-            case 2:
-              break;
-            case 3:
-              Navigator.pushNamed(context, '/profile');
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_food_beverage_outlined),
-            label: "Drinks",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: "Logs",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
-      ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 2),
     );
   }
 
@@ -361,8 +458,8 @@ class _TrackerPageState extends State<TrackerPage> {
                       final date = visibleDates[index];
                       final isSelected =
                           date.day == selectedDate.day &&
-                          date.month == selectedDate.month &&
-                          date.year == selectedDate.year;
+                              date.month == selectedDate.month &&
+                              date.year == selectedDate.year;
 
                       return GestureDetector(
                         onTap: () {
@@ -437,113 +534,16 @@ class _TrackerPageState extends State<TrackerPage> {
         children: drinks
             .asMap()
             .entries
-            .map((entry) => _buildDrinkCard(entry.value, entry.key))
+            .map((entry) => ConsumptionLogCard(
+          name: entry.value['name'],
+          caffeine: entry.value['caffeine'],
+          size: entry.value['size'],
+          time: entry.value['time'],
+          image: entry.value['image'],
+          onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
+          onDelete: () => _showDeleteDialog(entry.key),
+        ))
             .toList(),
-      ),
-    );
-  }
-
-  Widget _buildDrinkCard(Map<String, dynamic> drink, int index) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD5BBA2),
-        border: Border.all(color: const Color(0xFFA67C52), width: 1.0),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.pushNamed(context, '/drinkinformation');
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.brown[800],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      drink['image'],
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        drink['name'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        '${drink['caffeine']} • ${drink['size']}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF42261D),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (drink['time'].isNotEmpty) ...[
-                        const SizedBox(height: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6E3D2C),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            drink['time'],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(0, -5), // Raise X button by 5 pixels
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.black54,
-                      size: 18,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 24,
-                      minHeight: 24,
-                    ),
-                    onPressed: () {
-                      _showDeleteDialog(index);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -567,9 +567,7 @@ class _TrackerPageState extends State<TrackerPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildDropdown(sortBy, ['Weekly', 'Monthly', 'Yearly'], (
-                  value,
-                ) {
+                _buildDropdown(sortBy, ['Weekly', 'Monthly', 'Yearly'], (value) {
                   setState(() {
                     sortBy = value!;
                   });
@@ -579,7 +577,7 @@ class _TrackerPageState extends State<TrackerPage> {
                   _buildDropdown(
                     filterWeek,
                     ['First Week', 'Second Week', 'Third Week', 'Fourth Week'],
-                    (value) {
+                        (value) {
                       setState(() => filterWeek = value!);
                     },
                   ),
@@ -602,7 +600,7 @@ class _TrackerPageState extends State<TrackerPage> {
                       'November',
                       'December',
                     ],
-                    (value) {
+                        (value) {
                       setState(() => filterMonth = value!);
                     },
                   ),
@@ -611,7 +609,7 @@ class _TrackerPageState extends State<TrackerPage> {
                 _buildDropdown(
                   '$filterYear',
                   ['2023', '2024', '2025', '2026'],
-                  (value) {
+                      (value) {
                     setState(() => filterYear = int.parse(value!));
                   },
                 ),
@@ -624,10 +622,10 @@ class _TrackerPageState extends State<TrackerPage> {
   }
 
   Widget _buildDropdown(
-    String value,
-    List<String> items,
-    Function(String?)? onChanged,
-  ) {
+      String value,
+      List<String> items,
+      Function(String?)? onChanged,
+      ) {
     return Container(
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -636,7 +634,6 @@ class _TrackerPageState extends State<TrackerPage> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        // Wrap DropdownButton with Center
         child: DropdownButton<String>(
           value: value,
           dropdownColor: const Color(0xFF6E3D2C),
@@ -665,172 +662,4 @@ class _TrackerPageState extends State<TrackerPage> {
       ),
     );
   }
-
-  Widget _buildChart() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        height: 200,
-        child: CustomPaint(painter: CaffeineChartPainter(), child: Container()),
-      ),
-    );
-  }
-
-  void _showDeleteDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFFF5EBE0),
-          title: const Text(
-            'Delete Drink',
-            style: TextStyle(color: Color(0xFF4B2C20)),
-          ),
-          content: const Text(
-            'Are you sure you want to delete this drink?',
-            style: TextStyle(color: Color(0xFF6E3D2C)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF6E3D2C)),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteDrink(index);
-              },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _deleteDrink(int index) {
-    setState(() {
-      drinks.removeAt(index);
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Drink deleted successfully')));
-  }
-}
-
-class CaffeineChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF8B6F47)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final fillPaint = Paint()
-      ..color = const Color(0xFFD5BBA2).withOpacity(0.5)
-      ..style = PaintingStyle.fill;
-
-    final gridPaint = Paint()
-      ..color = Colors.grey.shade300
-      ..strokeWidth = 0.5;
-
-    // Draw horizontal grid lines
-    for (int i = 0; i <= 4; i++) {
-      double y = size.height - (i * size.height / 4);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    // Define the chart points
-    final path = Path();
-    final points = [
-      Offset(0, size.height * 0.6),
-      Offset(size.width * 0.14, size.height * 0.55),
-      Offset(size.width * 0.28, size.height * 0.5),
-      Offset(size.width * 0.42, size.height * 0.45),
-      Offset(size.width * 0.56, size.height * 0.4),
-      Offset(size.width * 0.70, size.height * 0.5),
-      Offset(size.width * 0.84, size.height * 0.35),
-    ];
-
-    path.moveTo(points[0].dx, points[0].dy);
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
-    }
-
-    // Fill under the line
-    final fillPath = Path.from(path);
-    fillPath.lineTo(size.width, size.height);
-    fillPath.lineTo(0, size.height);
-    fillPath.close();
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(path, paint);
-
-    // Draw label
-    final labelBg = Paint()
-      ..color = const Color(0xFF8B6F47)
-      ..style = PaintingStyle.fill;
-
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.25, size.height * 0.35, 100, 25),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(rect, labelBg);
-
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'Americano 85mg',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: ui.TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(size.width * 0.25 + 8, size.height * 0.35 + 5),
-    );
-
-    // Y-axis labels
-    final yLabels = ['0', '50', '100', '150', '200'];
-    for (int i = 0; i < yLabels.length; i++) {
-      final labelPainter = TextPainter(
-        text: TextSpan(
-          text: yLabels[i],
-          style: const TextStyle(color: Colors.black54, fontSize: 10),
-        ),
-        textDirection: ui.TextDirection.ltr,
-      );
-      labelPainter.layout();
-      labelPainter.paint(
-        canvas,
-        Offset(0, size.height - (i * size.height / 4) - 5),
-      );
-    }
-
-    // X-axis labels
-    final xLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    for (int i = 0; i < xLabels.length; i++) {
-      final labelPainter = TextPainter(
-        text: TextSpan(
-          text: xLabels[i],
-          style: const TextStyle(color: Colors.black54, fontSize: 10),
-        ),
-        textDirection: ui.TextDirection.ltr,
-      );
-      labelPainter.layout();
-      labelPainter.paint(
-        canvas,
-        Offset((i * size.width / 6) + 10, size.height + 10),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

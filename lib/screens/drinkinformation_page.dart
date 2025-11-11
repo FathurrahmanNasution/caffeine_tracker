@@ -1,10 +1,15 @@
+import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
+import 'package:caffeine_tracker/widgets/consumption_form.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import '../widgets/app_top_navigation.dart';
+import 'package:caffeine_tracker/model/user_model.dart';
+
 
 class DrinkinformationPage extends StatefulWidget {
   const DrinkinformationPage({super.key});
@@ -14,8 +19,12 @@ class DrinkinformationPage extends StatefulWidget {
 }
 
 class _DrinkinformationPageState extends State<DrinkinformationPage> {
-  final DrinkService _drinkService = DrinkService();
+  final _auth = AuthService();
   final ConsumptionService _consumptionService = ConsumptionService();
+  UserModel? _userProfile;
+  bool _loading = true;
+
+  final DrinkService _drinkService = DrinkService();
 
   DrinkModel? drink;
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
@@ -31,8 +40,33 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
   @override
   void initState() {
     super.initState();
+    _loadUserProfile();
     _servingController = TextEditingController();
     _caffeineController = TextEditingController();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/signin');
+      }
+      return;
+    }
+
+    try {
+      final doc = await _auth.getProfileDoc(user.uid);
+      if (mounted) {
+        setState(() {
+          _userProfile = UserModel.fromMap(user.uid, doc.data());
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   @override
@@ -115,12 +149,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
     }
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final DateFormat dateFormatter = DateFormat('EEEE, dd MMM yyyy');
-    final DateFormat timeFormatter = DateFormat('hh:mm a');
-    return '${dateFormatter.format(dateTime)}   ${timeFormatter.format(dateTime)}';
-  }
-
   Future<void> _saveDrink() async {
     if (drink == null) return;
 
@@ -184,7 +212,9 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          _buildTopNavigationBar(height),
+          AppTopNavigation(
+            userProfile: _userProfile,
+          ),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -197,111 +227,59 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 
-  Widget _buildTopNavigationBar(double height) {
-    return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
-        left: 0,
-        right: 0,
-        bottom: 8,
-      ),
-      color: const Color(0xFFD5BBA2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: Image.asset(
-              "assets/images/coffee.png",
-              height: height * 0.06,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/profile');
-              },
-              icon: const CircleAvatar(
-                backgroundImage: AssetImage("assets/images/profile.png"),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildHeader(double height) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        _buildHeaderBackground(height),
-        _buildHeaderCircle(height),
-        _buildDrinkImage(height),
-      ],
-    );
-  }
-
-  Widget _buildHeaderBackground(double height) {
-    return Container(
-      height: height * 0.15,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Color(0xFFD5BBA2),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(70),
-          bottomRight: Radius.circular(70),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.2),
-            blurRadius: 4,
-            offset: Offset(0, 4),
+        Container(
+          height: height * 0.15,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: Color(0xFFD5BBA2),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(70),
+              bottomRight: Radius.circular(70),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.2),
+                blurRadius: 4,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderCircle(double height) {
-    return Positioned(
-      bottom: -height * 0.1,
-      left: 0,
-      right: 0,
-      child: Container(
-        height: height * 0.23,
-        width: height * 0.23,
-        decoration: const BoxDecoration(
-          color: Color(0xFFF5EBE0),
-          shape: BoxShape.circle,
         ),
-      ),
-    );
-  }
-
-  Widget _buildDrinkImage(double height) {
-    return Positioned(
-      bottom: -height * 0.05,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: drink != null
-            ? (drink!.imageUrl.startsWith('http')
-            ? Image.network(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain)
-            : Image.asset(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain))
-            : Image.asset("assets/images/coffee.png", height: height * 0.15, fit: BoxFit.contain),
-      ),
+        Positioned(
+          bottom: -height * 0.1,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: height * 0.23,
+            width: height * 0.23,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5EBE0),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -height * 0.05,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: drink != null
+                ? (drink!.imageUrl.startsWith('http')
+                ? Image.network(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain)
+                : Image.asset(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain))
+                : Image.asset("assets/images/coffee.png", height: height * 0.15, fit: BoxFit.contain),
+          ),
+        ),
+      ],
     );
   }
 
@@ -317,11 +295,18 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
           const SizedBox(height: 7),
           _buildInformationSection(),
           const SizedBox(height: 34),
-          _buildServingSizeInput(),
-          const SizedBox(height: 16),
-          _buildCaffeineContentInput(),
-          const SizedBox(height: 28),
-          _buildTimeTakenSection(),
+          ConsumptionForm(
+            servingSize: servingSize,
+            caffeineContent: caffeineContent,
+            selectedDateTime: selectedDateTime,
+            servingController: _servingController,
+            caffeineController: _caffeineController,
+            onIncrement: _increment,
+            onDecrement: _decrement,
+            onServingChanged: _onServingChanged,
+            onCaffeineChanged: _onCaffeineChanged,
+            onSelectDateTime: _selectDateTime,
+          ),
           const SizedBox(height: 30),
           _buildSaveButton(),
         ],
@@ -401,178 +386,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
     );
   }
 
-  Widget _buildServingSizeInput() {
-    final width = MediaQuery.of(context).size.width;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          "Enter serving size",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF42261D),
-          ),
-        ),
-        Container(
-          width: width * 0.37,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: const Color(0xFFA67C52),
-              width: 2.0,
-            ),
-            borderRadius: BorderRadius.circular(50),
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: _decrement,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _servingController,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  onChanged: _onServingChanged,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              const Text("mL", style: TextStyle(fontWeight: FontWeight.bold)),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _increment,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCaffeineContentInput() {
-    final width = MediaQuery.of(context).size.width;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          "Caffeine Content",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF42261D),
-          ),
-        ),
-        Container(
-          width: width * 0.37,
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD6CCC2),
-            border: Border.all(
-              color: const Color(0xFFA67C52),
-              width: 2.0,
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.coffee, size: 23),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _caffeineController,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  onChanged: _onCaffeineChanged,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              const Text("mg", style: TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimeTakenSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.access_time, size: 18, color: Colors.black),
-              SizedBox(width: 4),
-              Text(
-                "Time taken",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: _selectDateTime,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color.fromRGBO(255, 255, 255, 0.5),
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(
-                color: const Color(0xFFE8DDD4),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  _formatDateTime(selectedDateTime),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF786656),
-                  ),
-                ),
-                const Spacer(),
-                const Icon(
-                  Icons.keyboard_arrow_down,
-                  color: Color(0xFF6E3D2C),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
@@ -588,11 +401,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_circle_outline,
-              color: Colors.white,
-              size: 20,
-            ),
+            Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
             SizedBox(width: 4),
             Text(
               "Save",
@@ -605,51 +414,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 1,
-      selectedItemColor: const Color(0xFF6E3D2C),
-      unselectedItemColor: const Color(0xFFA67C52),
-      showSelectedLabels: true,
-      showUnselectedLabels: true,
-      onTap: (int index) {
-        switch (index) {
-          case 0:
-            Navigator.pushNamed(context, '/dashboard');
-            break;
-          case 1:
-            Navigator.pushNamed(context, '/coffeelist');
-            break;
-          case 2:
-            Navigator.pushNamed(context, '/logs');
-            break;
-          case 3:
-            Navigator.pushNamed(context, '/profile');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: "Home",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.emoji_food_beverage_outlined),
-          label: "Add Drinks",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: "Logs",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: "Profile",
-        ),
-      ],
     );
   }
 }

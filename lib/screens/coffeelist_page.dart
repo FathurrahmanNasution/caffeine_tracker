@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
+import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
+import 'package:caffeine_tracker/services/auth_service.dart';
+import 'package:caffeine_tracker/widgets/drink_card.dart';
+import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
+import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
+import 'package:caffeine_tracker/utils/responsive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CoffeeListPage extends StatefulWidget {
@@ -11,10 +17,44 @@ class CoffeeListPage extends StatefulWidget {
 }
 
 class _CoffeeListPageState extends State<CoffeeListPage> {
+  final _auth = AuthService();
   final DrinkService _drinkService = DrinkService();
+  UserModel? _userProfile;
+  bool _loading = true;
+
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/signin');
+      }
+      return;
+    }
+
+    try {
+      final doc = await _auth.getProfileDoc(user.uid);
+      if (mounted) {
+        setState(() {
+          _userProfile = UserModel.fromMap(user.uid, doc.data());
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -24,85 +64,115 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final width = size.width;
-    final height = size.height;
+    final r = context.responsive;
+
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5EBE0),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
-      appBar: _buildAppBar(height),
-      body: Padding(
-        padding: EdgeInsets.all(width * 0.04),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: height * 0.02),
-            _buildSearchBar(width),
-            SizedBox(height: height * 0.025),
-            _buildSectionTitle("Your Favorites"),
-            SizedBox(height: height * 0.02),
-            _buildFavoritesSection(height, width),
-            SizedBox(height: height * 0.025),
-            _buildSectionTitle("All Drinks"),
-            SizedBox(height: height * 0.02),
-            _buildAllDrinksSection(width, height),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(double height) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(65),
-      child: AppBar(
-        backgroundColor: const Color(0xFFD5BBA2),
-        elevation: 0,
-        centerTitle: true,
-        title: GestureDetector(
-          child: Image.asset("assets/images/coffee.png", height: height * 0.06),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              icon: const CircleAvatar(
-                backgroundImage: AssetImage("assets/images/profile.png"),
+      body: Column(
+        children: [
+          AppTopNavigation(
+            userProfile: _userProfile,
+          ),
+          Expanded(
+            child: Center(
+              child: Container(
+                constraints: BoxConstraints(maxWidth: r.maxContentWidth),
+                child: Padding(
+                  padding: r.pagePadding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: r.smallSpacing),
+                      // Search Bar
+                      _buildSearchBar(r),
+                      SizedBox(height: r.mediumSpacing),
+                      // Your Favorites Title
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          "Your Favorites",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: r.sp(18),
+                            color: const Color(0xFF6E3D2C),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: r.smallSpacing),
+                      // Favorites Section
+                      _buildFavoritesSection(r),
+                      SizedBox(height: r.mediumSpacing),
+                      // All Drinks Title
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          "All Drinks",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: r.sp(18),
+                            color: const Color(0xFF6E3D2C),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: r.smallSpacing),
+                      // All Drinks Section
+                      Expanded(
+                        child: _buildAllDrinksSection(r),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              onPressed: () {
-                Navigator.pushNamed(context, '/profile');
-              },
             ),
           ),
         ],
       ),
+      bottomNavigationBar: r.isMobile
+          ? const AppBottomNavigation(currentIndex: 1)
+          : null,
     );
   }
 
-  Widget _buildSearchBar(double width) {
+  Widget _buildSearchBar(Responsive r) {
     return Align(
       alignment: Alignment.center,
       child: SizedBox(
-        width: width * 0.9,
+        width: r.adaptive(
+          mobile: r.wp(90),
+          tablet: r.wp(70),
+          desktop: r.wp(60),
+        ),
         child: TextField(
           controller: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-          style: const TextStyle(color: Color(0xFF5D3A00)),
+          onChanged: (value) => setState(() => _searchQuery = value),
+          style: TextStyle(
+            color: const Color(0xFF5D3A00),
+            fontSize: r.sp(14),
+          ),
           decoration: InputDecoration(
             hintText: "Search your drinks...",
-            hintStyle: const TextStyle(color: Color(0xFF6E3D2C)),
+            hintStyle: TextStyle(
+              color: const Color(0xFF6E3D2C),
+              fontSize: r.sp(14),
+            ),
             prefixIcon: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: const Color(0xFFA67C52)),
                 color: const Color(0xFFD5BBA2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.search, color: Color(0xFF6E3D2C), size: 24),
+              child: Icon(
+                Icons.search,
+                color: const Color(0xFF6E3D2C),
+                size: r.sp(24),
+              ),
             ),
             filled: true,
             fillColor: Colors.white54,
@@ -121,23 +191,15 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-          color: Color(0xFF6E3D2C),
-        ),
-      ),
+  Widget _buildFavoritesSection(Responsive r) {
+    final height = r.adaptive(
+      mobile: r.hp(24),
+      tablet: r.hp(28),
+      desktop: r.hp(32),
     );
-  }
 
-  Widget _buildFavoritesSection(double height, double width) {
     return SizedBox(
-      height: height * 0.24,
+      height: height,
       child: StreamBuilder<List<DrinkModel>>(
         stream: _drinkService.searchFavoriteDrinks(currentUserId, _searchQuery),
         builder: (context, snapshot) {
@@ -146,10 +208,13 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 "No favorites yet",
-                style: TextStyle(color: Color(0xFF6E3D2C)),
+                style: TextStyle(
+                  color: const Color(0xFF6E3D2C),
+                  fontSize: r.sp(14),
+                ),
               ),
             );
           }
@@ -161,8 +226,25 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
             itemBuilder: (context, index) {
               final drink = favorites[index];
               return SizedBox(
-                width: width * 0.32,
-                child: _buildCoffeeCard(context, drink, showLove: true),
+                width: r.adaptive(
+                  mobile: r.wp(32),
+                  tablet: r.wp(24),
+                  desktop: r.wp(18),
+                ),
+                child: DrinkCard(
+                  drink: drink,
+                  showFavoriteIcon: true,
+                  onAddPressed: () async {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/drinkinformation',
+                      arguments: drink,
+                    );
+                    if (result == true && mounted) {
+                      setState(() {});
+                    }
+                  },
+                ),
               );
             },
           );
@@ -171,246 +253,100 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
     );
   }
 
-  Widget _buildAllDrinksSection(double width, double height) {
-    return Expanded(
-      child: Stack(
-        children: [
-          StreamBuilder<List<DrinkModel>>(
-            stream: _drinkService.searchNonFavoriteDrinks(currentUserId, _searchQuery),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+  Widget _buildAllDrinksSection(Responsive r) {
+    return Stack(
+      children: [
+        StreamBuilder<List<DrinkModel>>(
+          stream: _drinkService.searchNonFavoriteDrinks(currentUserId, _searchQuery),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Center(
-                  child: Text(
-                    "No drinks available",
-                    style: TextStyle(color: Color(0xFF6E3D2C)),
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(
+                child: Text(
+                  "No drinks available",
+                  style: TextStyle(
+                    color: const Color(0xFF6E3D2C),
+                    fontSize: r.sp(14),
                   ),
-                );
-              }
-
-              final drinks = snapshot.data!;
-              return GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: width < 360 ? 2 : 3,
-                  childAspectRatio: 0.56,
-                  mainAxisSpacing: 15,
-                  crossAxisSpacing: 3,
                 ),
-                itemCount: drinks.length,
-                itemBuilder: (context, index) {
-                  final drink = drinks[index];
-                  return _buildCoffeeCard(context, drink);
-                },
               );
-            },
-          ),
-          _buildAddOthersButton(width, height),
-        ],
-      ),
-    );
-  }
+            }
 
-  Widget _buildAddOthersButton(double width, double height) {
-    return Positioned(
-      bottom: 10,
-      right: 10,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4E8D7C),
-          shape: const StadiumBorder(),
-          padding: EdgeInsets.symmetric(
-            horizontal: width * 0.04,
-            vertical: height * 0.015,
-          ),
+            final drinks = snapshot.data!;
+            final crossAxisCount = r.gridCrossAxisCount(
+              mobile: 3,
+              tablet: 4,
+              desktop: 6,
+            );
+
+            return GridView.builder(
+              padding: const EdgeInsets.only(top: 0),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: r.adaptive(
+                  mobile: 0.56,
+                  tablet: 0.65,
+                  desktop: 0.75,
+                ),
+                mainAxisSpacing: r.adaptive(mobile: 15, tablet: 18, desktop: 20),
+                crossAxisSpacing: r.adaptive(mobile: 3, tablet: 8, desktop: 12),
+              ),
+              itemCount: drinks.length,
+              itemBuilder: (context, index) {
+                final drink = drinks[index];
+                return DrinkCard(
+                  drink: drink,
+                  onAddPressed: () async {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/drinkinformation',
+                      arguments: drink,
+                    );
+                    if (result == true && mounted) {
+                      setState(() {});
+                    }
+                  },
+                );
+              },
+            );
+          },
         ),
-        onPressed: () {
-          Navigator.pushNamed(context, '/addotherdrink');
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text(
-              "Add Others",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        Positioned(
+          bottom: r.adaptive(mobile: 10, tablet: 15, desktop: 20),
+          right: r.adaptive(mobile: 10, tablet: 15, desktop: 20),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4E8D7C),
+              shape: const StadiumBorder(),
+              padding: EdgeInsets.symmetric(
+                horizontal: r.adaptive(mobile: 16, tablet: 20, desktop: 24),
+                vertical: r.adaptive(mobile: 12, tablet: 14, desktop: 16),
               ),
             ),
-            SizedBox(width: 6),
-            Icon(Icons.add_circle_outline, color: Colors.white, size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCoffeeCard(BuildContext context, DrinkModel drink, {bool showLove = false}) {
-    final width = MediaQuery.of(context).size.width;
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      decoration: BoxDecoration(
-        color: Colors.white70,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromRGBO(0, 0, 0, 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCoffeeCardImage(drink, width, showLove),
-          _buildCoffeeCardInfo(drink),
-          const Spacer(),
-          _buildCoffeeCardAddButton(drink),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoffeeCardImage(DrinkModel drink, double width, bool showLove) {
-    return SizedBox(
-      height: width * 0.3,
-      child: Stack(
-        children: [
-          Align(
-            alignment: Alignment.center,
-            child: drink.imageUrl.startsWith('http')
-                ? Image.network(
-              drink.imageUrl,
-              height: width * 0.31,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset(
-                  "assets/images/coffee.png",
-                  height: width * 0.21,
-                  fit: BoxFit.contain,
-                );
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Center(child: CircularProgressIndicator());
-              },
-            )
-                : Image.asset(
-              drink.imageUrl,
-              height: width * 0.25,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset(
-                  "assets/images/coffee.png",
-                  height: width * 0.21,
-                  fit: BoxFit.contain,
-                );
-              },
+            onPressed: () => Navigator.pushNamed(context, '/addotherdrink'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Add Others",
+                  style: TextStyle(
+                    fontSize: r.sp(16),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.add_circle_outline,
+                  color: Colors.white,
+                  size: r.sp(24),
+                ),
+              ],
             ),
           ),
-          if (showLove)
-            const Positioned(
-              top: 12,
-              right: 12,
-              child: Icon(Icons.favorite, color: Colors.red, size: 20),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoffeeCardInfo(DrinkModel drink) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            drink.name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.3),
-          ),
-          Text(
-            "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6E3D2C),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoffeeCardAddButton(DrinkModel drink) {
-    return Align(
-      alignment: Alignment.bottomRight,
-      child: IconButton(
-        icon: const Icon(
-          Icons.add_circle_outline,
-          size: 24,
-          color: Color(0xFF4E8D7C),
-        ),
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        onPressed: () async {
-          final result = await Navigator.pushNamed(
-            context,
-            '/drinkinformation',
-            arguments: drink,
-          );
-          if (result == true && mounted) {
-            setState(() {});
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 1,
-      selectedItemColor: const Color(0xFF6E3D2C),
-      unselectedItemColor: const Color(0xFFA67C52),
-      showSelectedLabels: true,
-      showUnselectedLabels: true,
-      onTap: (int index) {
-        switch (index) {
-          case 0:
-            Navigator.pushNamed(context, '/dashboard');
-            break;
-          case 1:
-          // Already on this page
-            break;
-          case 2:
-            Navigator.pushNamed(context, '/logs');
-            break;
-          case 3:
-            Navigator.pushNamed(context, '/profile');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: "Home",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.emoji_food_beverage_outlined),
-          label: "Add Drinks",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: "Logs",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: "Profile",
         ),
       ],
     );
