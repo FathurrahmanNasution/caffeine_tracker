@@ -76,8 +76,8 @@ class Responsive {
   ));
 
   // Spacing responsive
-  double get smallSpacing => adaptive(mobile: 8, tablet: 12, desktop: 16);
-  double get mediumSpacing => adaptive(mobile: 16, tablet: 20, desktop: 24);
+  double get smallSpacing => adaptive(mobile: 10, tablet: 12, desktop: 16);
+  double get mediumSpacing => adaptive(mobile: 18, tablet: 20, desktop: 24);
   double get largeSpacing => adaptive(mobile: 24, tablet: 32, desktop: 40);
 }
 

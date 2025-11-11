@@ -89,7 +89,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: r.smallSpacing),
+                      SizedBox(height: r.mediumSpacing),
                       // Search Bar
                       _buildSearchBar(r),
                       SizedBox(height: r.mediumSpacing),
