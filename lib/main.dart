@@ -13,6 +13,7 @@ import 'package:caffeine_tracker/screens/signin_page.dart';
 import 'package:caffeine_tracker/screens/signup_page.dart';
 import 'package:caffeine_tracker/screens/splash_screen.dart';
 import 'package:caffeine_tracker/screens/tracker_page.dart';
+import 'package:caffeine_tracker/screens/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -44,12 +45,12 @@ class MyApp extends StatelessWidget {
         '/accountauthorization': (context) => const AccountAuthorizationPage(),
         '/change-password': (context) => const ChangePasswordPage(),
         '/onboarding': (context) => const OnboardingPage(),
-        '/logs': (context) => const TrackerPage(),
-        '/coffeelist': (context) => const CoffeeListPage(),
+        '/dashboard': (context) => const MainScaffold(initialIndex: 0),
+        '/coffeelist': (context) => const MainScaffold(initialIndex: 1),
+        '/logs': (context) => const MainScaffold(initialIndex: 2),
+        '/profile': (context) => const MainScaffold(initialIndex: 3),
         '/drinkinformation': (context) => const DrinkinformationPage(),
         '/addotherdrink': (context) => const AddotherdrinkPage(),
-        '/dashboard': (context) => const DashboardPage(),
-        '/profile': (context) => const ProfilePage(),
         '/admin': (context) => const AdminAddDrinkPage(),
       },
       onGenerateRoute: (settings) {

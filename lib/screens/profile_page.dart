@@ -378,7 +378,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 3),
     );
   }
 }

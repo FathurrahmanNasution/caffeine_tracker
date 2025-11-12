@@ -1,4 +1,3 @@
-import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
 import 'package:caffeine_tracker/widgets/consumption_form.dart';
 import 'package:flutter/material.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
@@ -181,6 +180,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -199,6 +199,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
         children: [
           AppTopNavigation(
             userProfile: _userProfile,
+            showBackButton: true,
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -212,41 +213,6 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
           ),
         ],
       ),
-      bottomSheet: Container(
-        color: const Color(0xFFF5EBE0),
-        padding: const EdgeInsets.fromLTRB(35, 16, 35, 16),
-        child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFA67C52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: _saveDrink,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
-                  SizedBox(width: 4),
-                  Text(
-                    "Save",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 
@@ -389,7 +355,38 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
             onCaffeineChanged: _onCaffeineChanged,
             onSelectDateTime: _selectDateTime,
           ),
-          const SizedBox(height: 100),
+          const SizedBox(height: 30),
+
+          // Save Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFA67C52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: _saveDrink,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                  SizedBox(width: 4),
+                  Text(
+                    "Save",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );

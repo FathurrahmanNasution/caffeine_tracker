@@ -1,4 +1,5 @@
 import 'package:caffeine_tracker/model/user_model.dart';
+import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/services/auth_service.dart';
 import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
@@ -6,6 +7,7 @@ import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TrackerPage extends StatefulWidget {
   const TrackerPage({super.key});
@@ -16,43 +18,22 @@ class TrackerPage extends StatefulWidget {
 
 class _TrackerPageState extends State<TrackerPage> {
   final _auth = AuthService();
+  final _firestore = FirebaseFirestore.instance;
   UserModel? _userProfile;
   bool _loading = true;
+  List<ConsumptionLog> _consumptions = [];
 
-  DateTime selectedDate = DateTime(2026, 8, 15);
+  DateTime selectedDate = DateTime.now();
   String sortBy = 'Weekly';
   String filterWeek = 'First Week';
   String filterMonth = 'January';
-  int filterYear = 2025;
-
-  final List<Map<String, dynamic>> drinks = [
-    {
-      'name': 'Americano',
-      'caffeine': '83mg',
-      'size': '240ml',
-      'time': '09:25 AM',
-      'image': '☕',
-    },
-    {
-      'name': 'Espresso',
-      'caffeine': '63mg',
-      'size': '30ml (1 shot)',
-      'time': '02:00 PM',
-      'image': '☕',
-    },
-    {
-      'name': 'Frappuccino',
-      'caffeine': '65mg',
-      'size': '355ml',
-      'time': '',
-      'image': '🥤',
-    },
-  ];
+  int filterYear = DateTime.now().year;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadConsumptions();
   }
 
   Future<void> _loadUserProfile() async {
@@ -79,44 +60,173 @@ class _TrackerPageState extends State<TrackerPage> {
     }
   }
 
+  Future<void> _loadConsumptions() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final snapshot = await _firestore
+          .collection('consumptions')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('consumedAt', descending: true)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _consumptions = snapshot.docs
+              .map((doc) => ConsumptionLog.fromMap(doc.data(), doc.id))
+              .toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading consumptions: $e');
+    }
+  }
+
+  List<ConsumptionLog> _getConsumptionsForDate(DateTime date) {
+    return _consumptions.where((log) {
+      return log.consumedAt.year == date.year &&
+          log.consumedAt.month == date.month &&
+          log.consumedAt.day == date.day;
+    }).toList();
+  }
+
   // Data untuk chart berdasarkan sortBy
   Map<dynamic, double> _getChartData() {
     if (sortBy == 'Weekly') {
-      // Weekly data (7 days)
-      return {
-        0: 150.0,
-        1: 180.0,
-        2: 120.0,
-        3: 200.0,
-        4: 160.0,
-        5: 140.0,
-        6: 100.0,
-      };
+      return _getWeeklyData();
     } else if (sortBy == 'Monthly') {
-      // Monthly data (12 months)
-      return {
-        0: 2500.0,
-        1: 2800.0,
-        2: 3000.0,
-        3: 2700.0,
-        4: 3200.0,
-        5: 2900.0,
-        6: 3100.0,
-        7: 2600.0,
-        8: 2800.0,
-        9: 3000.0,
-        10: 2700.0,
-        11: 2900.0,
-      };
+      return _getMonthlyData();
     } else {
-      // Yearly data (multiple years)
-      return {
-        '2023': 30000.0,
-        '2024': 35000.0,
-        '2025': 32000.0,
-        '2026': 28000.0,
-      };
+      return _getYearlyData();
     }
+  }
+
+  Map<int, double> _getWeeklyData() {
+    final now = DateTime.now();
+    final currentDay = now.day;
+
+    int weekStart = _getWeekStart(filterWeek);
+    int weekEnd = _getWeekEnd(filterWeek, filterYear, _getMonthNumber(filterMonth));
+
+    Map<int, double> weeklyData = {};
+
+    // Initialize all days in the week
+    for (int i = weekStart; i <= weekEnd; i++) {
+      weeklyData[i] = 0;
+    }
+
+    // Calculate actual data from consumptions
+    for (var consumption in _consumptions) {
+      final consumedDate = consumption.consumedAt;
+      if (consumedDate.year == filterYear &&
+          consumedDate.month == _getMonthNumber(filterMonth) &&
+          consumedDate.day >= weekStart &&
+          consumedDate.day <= weekEnd &&
+          consumedDate.day < currentDay) {
+        weeklyData[consumedDate.day] =
+            (weeklyData[consumedDate.day] ?? 0) + consumption.caffeineContent;
+      }
+    }
+
+    return weeklyData;
+  }
+
+  Map<int, double> _getMonthlyData() {
+    final now = DateTime.now();
+    final currentDay = now.day;
+    final monthNumber = _getMonthNumber(filterMonth);
+    final daysInMonth = DateTime(filterYear, monthNumber + 1, 0).day;
+
+    Map<int, double> monthlyData = {};
+
+    List<Map<String, dynamic>> weeks = [
+      {'week': 1, 'start': 1, 'end': 7},
+      {'week': 2, 'start': 8, 'end': 14},
+      {'week': 3, 'start': 15, 'end': 21},
+      {'week': 4, 'start': 22, 'end': 28},
+      if (daysInMonth > 28) {'week': 5, 'start': 29, 'end': daysInMonth},
+    ];
+
+    // Initialize all weeks
+    for (var week in weeks) {
+      monthlyData[week['week']] = 0;
+    }
+
+    // Calculate actual data from consumptions
+    for (var consumption in _consumptions) {
+      final consumedDate = consumption.consumedAt;
+      if (consumedDate.year == filterYear &&
+          consumedDate.month == monthNumber) {
+
+        for (var week in weeks) {
+          int weekStart = week['start'];
+          int weekEnd = week['end'];
+
+          if (consumedDate.day >= weekStart &&
+              consumedDate.day <= weekEnd &&
+              weekEnd < currentDay) {
+            monthlyData[week['week']] =
+                (monthlyData[week['week']] ?? 0) + consumption.caffeineContent;
+            break;
+          }
+        }
+      }
+    }
+
+    return monthlyData;
+  }
+
+  Map<int, double> _getYearlyData() {
+    final now = DateTime.now();
+    final currentMonth = now.month;
+
+    Map<int, double> yearlyData = {};
+
+    // Initialize all 12 months
+    for (int i = 1; i <= 12; i++) {
+      yearlyData[i] = 0;
+    }
+
+    // Calculate actual data from consumptions
+    for (var consumption in _consumptions) {
+      final consumedDate = consumption.consumedAt;
+      if (consumedDate.year == filterYear && consumedDate.month < currentMonth) {
+        yearlyData[consumedDate.month] =
+            (yearlyData[consumedDate.month] ?? 0) + consumption.caffeineContent;
+      }
+    }
+
+    return yearlyData;
+  }
+
+  int _getWeekStart(String week) {
+    switch (week) {
+      case 'First Week': return 1;
+      case 'Second Week': return 8;
+      case 'Third Week': return 15;
+      case 'Fourth Week': return 22;
+      case 'Fifth Week': return 29;
+      default: return 1;
+    }
+  }
+
+  int _getWeekEnd(String week, int year, int month) {
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    switch (week) {
+      case 'First Week': return 7;
+      case 'Second Week': return 14;
+      case 'Third Week': return 21;
+      case 'Fourth Week': return 28;
+      case 'Fifth Week': return daysInMonth;
+      default: return 7;
+    }
+  }
+
+  int _getMonthNumber(String monthName) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    return months.indexOf(monthName) + 1;
   }
 
   ChartType _getChartType() {
@@ -131,29 +241,224 @@ class _TrackerPageState extends State<TrackerPage> {
 
   List<String> _getChartLabels() {
     if (sortBy == 'Weekly') {
-      return ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      return _getWeeklyLabels();
     } else if (sortBy == 'Monthly') {
-      return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return _getMonthlyLabels();
     } else {
-      return ['2023', '2024', '2025', '2026'];
+      return ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
     }
   }
 
+  List<String> _getWeeklyLabels() {
+    int weekStart = _getWeekStart(filterWeek);
+    int weekEnd = _getWeekEnd(filterWeek, filterYear, _getMonthNumber(filterMonth));
+
+    List<String> labels = [];
+    for (int i = weekStart; i <= weekEnd; i++) {
+      labels.add('$i');
+    }
+    return labels;
+  }
+
+  List<String> _getMonthlyLabels() {
+    final monthNumber = _getMonthNumber(filterMonth);
+    final daysInMonth = DateTime(filterYear, monthNumber + 1, 0).day;
+
+    List<String> labels = ['Week-1', 'Week-2', 'Week-3', 'Week-4'];
+    if (daysInMonth > 28) {
+      labels.add('Week-5');
+    }
+    return labels;
+  }
+
+  bool _hasDataToShow() {
+    final data = _getChartData();
+    return data.values.any((value) => value > 0);
+  }
+
   void _handleChartTap(dynamic key) {
-    String message = '';
+    _showDetailsDialog(key);
+  }
+
+  void _showDetailsDialog(dynamic key) {
+    String title;
+    double totalCaffeine;
+    String description;
+    List<Map<String, dynamic>>? drinksList;
+
     if (sortBy == 'Weekly') {
-      final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      message = 'Tapped on ${days[key]}';
+      // Weekly: show list of drinks for specific day
+      title = 'Day $key';
+
+      // Get consumptions for that specific day
+      final targetDate = DateTime(
+        filterYear,
+        _getMonthNumber(filterMonth),
+        key as int,
+      );
+
+      final dayConsumptions = _consumptions.where((log) {
+        return log.consumedAt.year == targetDate.year &&
+            log.consumedAt.month == targetDate.month &&
+            log.consumedAt.day == targetDate.day;
+      }).toList();
+
+      if (dayConsumptions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('No drinks at that day'),
+              duration: Duration(seconds: 1)
+          ),
+        );
+        return;
+      }
+
+      drinksList = dayConsumptions.map((log) => {
+        'name': log.drinkName,
+        'caffeine': log.caffeineContent,
+        'size': log.servingSize,
+      }).toList();
+
+      totalCaffeine = dayConsumptions.fold<double>(
+          0.0,
+              (sum, log) => sum + log.caffeineContent
+      );
+      description = '';
+
     } else if (sortBy == 'Monthly') {
+      // Monthly: show week summary
+      final weekNames = ['First Week', 'Second Week', 'Third Week', 'Fourth Week', 'Fifth Week'];
+      title = weekNames[key - 1];
+
+      // Calculate total for that week
+      final monthNumber = _getMonthNumber(filterMonth);
+      final weekStart = _getWeekStart(weekNames[key - 1]);
+      final weekEnd = _getWeekEnd(weekNames[key - 1], filterYear, monthNumber);
+
+      totalCaffeine = _consumptions.where((log) {
+        return log.consumedAt.year == filterYear &&
+            log.consumedAt.month == monthNumber &&
+            log.consumedAt.day >= weekStart &&
+            log.consumedAt.day <= weekEnd;
+      }).fold<double>(0.0, (sum, log) => sum + log.caffeineContent);
+
+      description = 'Total caffeine consumed during $title';
+
+    } else {
+      // Yearly: show month summary
       final months = ['January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'];
-      message = 'Tapped on ${months[key]}';
-    } else {
-      message = 'Tapped on year $key';
+      title = '${months[key - 1]} $filterYear';
+
+      totalCaffeine = _consumptions.where((log) {
+        return log.consumedAt.year == filterYear &&
+            log.consumedAt.month == key;
+      }).fold<double>(0.0, (sum, log) => sum + log.caffeineContent);
+
+      description = 'Total caffeine consumed during ${months[key - 1]} $filterYear';
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 1)),
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF6E3D2C),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFFFFFF),
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD5BBA2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${totalCaffeine.toStringAsFixed(1)}mg',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF6E3D2C),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: drinksList != null
+              ? SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: drinksList.length,
+              itemBuilder: (context, index) {
+                final d = drinksList![index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5EBE0),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFA67C52)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.brown[800],
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              d['name'] as String,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              '${(d['caffeine'] as double).toStringAsFixed(1)}mg ~ ${d['size']}ml',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF6E3D2C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          )
+              : Text(
+            description,
+            style: const TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -316,16 +621,25 @@ class _TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  void _deleteDrink(int index) {
-    setState(() {
-      drinks.removeAt(index);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Drink deleted successfully'))
-    );
+  Future<void> _deleteConsumption(String consumptionId) async {
+    try {
+      await _firestore.collection('consumptions').doc(consumptionId).delete();
+      await _loadConsumptions(); // Reload data
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Drink deleted successfully'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting drink: $e'))
+        );
+      }
+    }
   }
 
-  void _showDeleteDialog(int index) {
+  void _showDeleteDialog(String consumptionId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -350,7 +664,7 @@ class _TrackerPageState extends State<TrackerPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _deleteDrink(index);
+                _deleteConsumption(consumptionId);
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
@@ -373,11 +687,9 @@ class _TrackerPageState extends State<TrackerPage> {
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          // Top Navigation Bar menggunakan AppTopNavigation widget
           AppTopNavigation(
             userProfile: _userProfile,
           ),
-          // Rest of the content
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -389,12 +701,31 @@ class _TrackerPageState extends State<TrackerPage> {
                   const SizedBox(height: 20),
                   _buildSortBySection(),
                   const SizedBox(height: 10),
-                  CaffeineChart(
-                    data: _getChartData(),
-                    type: _getChartType(),
-                    labels: _getChartLabels(),
-                    onTap: _handleChartTap,
-                  ),
+                  if (_hasDataToShow())
+                    CaffeineChart(
+                      data: _getChartData(),
+                      type: _getChartType(),
+                      labels: _getChartLabels(),
+                      onTap: _handleChartTap,
+                    )
+                  else
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD5BBA2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Not enough data to load ${sortBy.toLowerCase()} chart',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF6E3D2C),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -402,7 +733,6 @@ class _TrackerPageState extends State<TrackerPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 2),
     );
   }
 
@@ -528,22 +858,43 @@ class _TrackerPageState extends State<TrackerPage> {
   }
 
   Widget _buildDrinksList() {
+    final todayConsumptions = _getConsumptionsForDate(selectedDate);
+
+    if (todayConsumptions.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFD5BBA2).withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text(
+            'No drinks logged for this day',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF6E3D2C),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: drinks
-            .asMap()
-            .entries
-            .map((entry) => ConsumptionLogCard(
-          name: entry.value['name'],
-          caffeine: entry.value['caffeine'],
-          size: entry.value['size'],
-          time: entry.value['time'],
-          image: entry.value['image'],
-          onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
-          onDelete: () => _showDeleteDialog(entry.key),
-        ))
-            .toList(),
+        children: todayConsumptions.map((log) {
+          return ConsumptionLogCard(
+            name: log.drinkName,
+            caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
+            size: '${log.servingSize}ml',
+            time: DateFormat('hh:mm a').format(log.consumedAt),
+            image: '☕', // Default icon, bisa disesuaikan
+            onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
+            onDelete: () => _showDeleteDialog(log.id),
+          );
+        }).toList(),
       ),
     );
   }
@@ -576,7 +927,7 @@ class _TrackerPageState extends State<TrackerPage> {
                 if (sortBy == 'Weekly') ...[
                   _buildDropdown(
                     filterWeek,
-                    ['First Week', 'Second Week', 'Third Week', 'Fourth Week'],
+                    ['First Week', 'Second Week', 'Third Week', 'Fourth Week', 'Fifth Week'],
                         (value) {
                       setState(() => filterWeek = value!);
                     },

@@ -1,7 +1,6 @@
 import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
-import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
@@ -29,16 +28,30 @@ class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  _DashboardPageState createState() => _DashboardPageState();
+  DashboardPageState createState() => DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class DashboardPageState extends State<DashboardPage> {
   final _auth = AuthService();
   final _consumptionService = ConsumptionService();
   UserModel? _userProfile;
   bool _loading = true;
 
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
+  Map<String, dynamic> _getCurrentWeekRange() {
+    final now = DateTime.now();
+    final dayOfMonth = now.day;
+
+
+    final weekStart = ((dayOfMonth - 1) ~/ 7) * 7 + 1;
+    final weekEnd = weekStart + 6;
+
+    return {
+      'start': weekStart,
+      'end': weekEnd,
+      'currentDay': dayOfMonth,
+    };
+  }
 
   Map<int, double> weeklyData = {
     0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0,
@@ -47,6 +60,18 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<int, List<ConsumptionLog>> weeklyDrinks = {
     0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [],
   };
+
+  List<String> _getWeekLabels() {
+    final weekRange = _getCurrentWeekRange();
+    final startDay = weekRange['start'] as int;
+    final endDay = weekRange['end'] as int;
+
+    List<String> labels = [];
+    for (int i = startDay; i <= endDay; i++) {
+      labels.add('$i');
+    }
+    return labels;
+  }
 
   List<Drink> drinks = [
     Drink(
@@ -102,31 +127,40 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
   }
+  void refreshData() {
+    _loadWeeklyData();
+  }
 
-  void _loadWeeklyData() {
+   void _loadWeeklyData() {
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday % 7));
-    final startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-    final endDate = startDate.add(const Duration(days: 7));
+    final weekRange = _getCurrentWeekRange();
+    final startDay = weekRange['start'] as int;
+    final endDay = weekRange['end'] as int;
+    final currentDay = weekRange['currentDay'] as int;
+
+    final startDate = DateTime(now.year, now.month, startDay);
+    final endDate = DateTime(now.year, now.month, endDay, 23, 59, 59);
 
     _consumptionService.getUserConsumptions(currentUserId).listen((logs) {
       final weekLogs = logs.where((log) {
-        return log.consumedAt.isAfter(startDate) &&
-            log.consumedAt.isBefore(endDate);
+        return log.consumedAt.isAfter(startDate.subtract(Duration(days: 1))) &&
+            log.consumedAt.isBefore(endDate.add(Duration(days: 1)));
       }).toList();
 
-      Map<int, double> newWeeklyData = {
-        0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0,
-      };
+      Map<int, double> newWeeklyData = {};
+      Map<int, List<ConsumptionLog>> newWeeklyDrinks = {};
 
-      Map<int, List<ConsumptionLog>> newWeeklyDrinks = {
-        0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [],
-      };
+      for (int i = startDay; i <= endDay; i++) {
+        newWeeklyData[i] = 0;
+        newWeeklyDrinks[i] = [];
+      }
 
       for (var log in weekLogs) {
-        int dayOfWeek = log.consumedAt.weekday == 7 ? 0 : log.consumedAt.weekday;
-        newWeeklyData[dayOfWeek] = (newWeeklyData[dayOfWeek] ?? 0) + log.caffeineContent;
-        newWeeklyDrinks[dayOfWeek]?.add(log);
+        final day = log.consumedAt.day;
+        if (day < currentDay) {
+          newWeeklyData[day] = (newWeeklyData[day] ?? 0) + log.caffeineContent;
+          newWeeklyDrinks[day]!.add(log);
+        }
       }
 
       if (mounted) {
@@ -140,13 +174,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _showDrinkDetails(BuildContext context, dynamic dayIndex) {
     final drinks = weeklyDrinks[dayIndex] ?? [];
-    final dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     if (drinks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No drinks consumed on ${dayNames[dayIndex]}'),
-          duration: const Duration(seconds: 2),
+          content: Text('No drinks at that day'),
+          duration: const Duration(seconds: 1),
         ),
       );
       return;
@@ -155,48 +188,45 @@ class _DashboardPageState extends State<DashboardPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        double totalCaffeine = drinks.fold(0, (sum, drink) => sum + drink.caffeineContent);
+        double totalCaffeine = drinks.fold(0, (sum, d) => sum + d.caffeineContent);
 
         return AlertDialog(
-          title: Text(
-            '${dayNames[dayIndex]}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF6E3D2C),
-            ),
+          backgroundColor: const Color(0xFFD6CCC2),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Day $dayIndex',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF000000),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.brown[800],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${totalCaffeine.toStringAsFixed(1)}mg',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: Color(0xFFFFFFFF),
+                  ),
+                ),
+              ),
+            ],
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD5BBA2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Total: ${totalCaffeine.toStringAsFixed(1)}mg',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFF6E3D2C),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Drinks consumed:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Color(0xFF6E3D2C),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...drinks.map((drink) => Container(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: drinks.length,
+              itemBuilder: (context, index) {
+                final d = drinks[index];
+                return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -220,16 +250,16 @@ class _DashboardPageState extends State<DashboardPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              drink.drinkName,
+                              d.drinkName,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 15,
                               ),
                             ),
                             Text(
-                              '${drink.caffeineContent.toStringAsFixed(1)}mg • ${drink.servingSize}ml',
+                              '${d.caffeineContent.toStringAsFixed(1)}mg ~ ${d.servingSize}ml',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: Color(0xFF6E3D2C),
                               ),
                             ),
@@ -238,16 +268,16 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ],
                   ),
-                )).toList(),
-              ],
+                );
+              },
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.pop(context),
               child: const Text(
                 'Close',
-                style: TextStyle(color: Color(0xFF6E3D2C)),
+                style: TextStyle(color: Color(0xFF6E3D2C), fontSize: 16),
               ),
             ),
           ],
@@ -388,7 +418,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   CaffeineChart(
                     data: weeklyData,
                     type: ChartType.weekly,
-                    labels: const ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+                    labels: _getWeekLabels(),
                     onTap: (key) => _showDrinkDetails(context, key),
                   ),
                   const SizedBox(height: 40),
@@ -448,14 +478,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
                       onDelete: () => _showDeleteDialog(index),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 0),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/coffeelist'),
         backgroundColor: Colors.brown[800],

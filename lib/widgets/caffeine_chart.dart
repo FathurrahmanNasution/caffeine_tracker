@@ -26,22 +26,19 @@ class CaffeineChart extends StatelessWidget {
           onTapDown: (details) {
             final RenderBox box = context.findRenderObject() as RenderBox;
             final localPosition = details.localPosition;
+            final currentDay = DateTime.now().day;
 
-            const double labelOffset = 25.0;
-            final double spacingDivisor = labels.length.toDouble();
             const double chartPadding = 30.0;
+            final chartWidth = box.size.width - chartPadding;
+            final sortedKeys = data.keys.toList()..sort();
 
-            final chartWidth = box.size.width - chartPadding - 6;
+            for (int i = 0; i < sortedKeys.length; i++) {
+              if (sortedKeys[i] >= currentDay) continue;
 
-            for (int i = 0; i < labels.length; i++) {
-              double pointX = (i * chartWidth / spacingDivisor) + labelOffset + chartPadding;
+              double pointX = (i * chartWidth / (sortedKeys.length - 1)) + (chartPadding / 2);
 
-              if ((localPosition.dx - pointX).abs() < 20) {
-                // For weekly: pass day index (0-6)
-                // For monthly: pass month index (0-11)
-                // For yearly: pass year string
-                final key = data.keys.toList()[i];
-                onTap(key);
+              if ((localPosition.dx - pointX).abs() < 25) {
+                onTap(sortedKeys[i]);
                 break;
               }
             }
@@ -51,6 +48,7 @@ class CaffeineChart extends StatelessWidget {
               data: data,
               labels: labels,
               type: type,
+              currentDay: DateTime.now().day,
             ),
             child: Container(),
           ),
@@ -64,11 +62,13 @@ class CaffeineChartPainter extends CustomPainter {
   final Map<dynamic, double> data;
   final List<String> labels;
   final ChartType type;
+  final int currentDay;
 
   CaffeineChartPainter({
     required this.data,
     required this.labels,
     required this.type,
+    required this.currentDay,
   });
 
   @override
@@ -97,7 +97,6 @@ class CaffeineChartPainter extends CustomPainter {
     }
 
     const double labelOffset = 25.0;
-    final double spacingDivisor = labels.length.toDouble();
 
     // Find max value untuk scaling
     double maxCaffeine = _getMaxCaffeineForType();
@@ -110,12 +109,12 @@ class CaffeineChartPainter extends CustomPainter {
     final path = Path();
     final List<Offset> points = [];
 
-    final sortedKeys = data.keys.toList();
+    final sortedKeys = data.keys.toList()..sort();
     for (int i = 0; i < sortedKeys.length; i++) {
       double caffeine = data[sortedKeys[i]] ?? 0;
       double normalizedValue = maxCaffeine > 0 ? caffeine / maxCaffeine : 0;
       double y = size.height - (normalizedValue * size.height);
-      double x = (i * size.width / spacingDivisor) + labelOffset;
+      double x = (i * (size.width - labelOffset * 2) / (sortedKeys.length - 1)) + labelOffset;
       points.add(Offset(x, y));
     }
 
@@ -134,9 +133,11 @@ class CaffeineChartPainter extends CustomPainter {
       canvas.drawPath(fillPath, fillPaint);
       canvas.drawPath(path, paint);
 
-      // Draw points (circles) on each data point
-      for (var point in points) {
-        canvas.drawCircle(point, 5, pointPaint);
+      for (int i = 0; i < points.length; i++) {
+        final dayKey = sortedKeys[i];
+        if (dayKey < currentDay) {
+          canvas.drawCircle(points[i], 5, pointPaint);
+        }
       }
     }
 
@@ -168,9 +169,8 @@ class CaffeineChartPainter extends CustomPainter {
       );
       labelPainter.layout();
 
-      // Center the label under each point
       final labelWidth = labelPainter.width;
-      final pointX = (i * size.width / spacingDivisor) + labelOffset;
+      final pointX = (i * (size.width - labelOffset * 2) / (labels.length - 1)) + labelOffset;
 
       labelPainter.paint(
         canvas,
@@ -182,7 +182,7 @@ class CaffeineChartPainter extends CustomPainter {
   double _getMaxCaffeineForType() {
     switch (type) {
       case ChartType.weekly:
-        return 250;
+        return 600;
       case ChartType.monthly:
         return 500;
       case ChartType.yearly:
@@ -199,6 +199,7 @@ class CaffeineChartPainter extends CustomPainter {
   bool shouldRepaint(CaffeineChartPainter oldDelegate) {
     return oldDelegate.data != data ||
         oldDelegate.labels != labels ||
-        oldDelegate.type != type;
+        oldDelegate.type != type ||
+        oldDelegate.currentDay != currentDay;
   }
 }
