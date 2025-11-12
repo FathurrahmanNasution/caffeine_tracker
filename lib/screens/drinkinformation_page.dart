@@ -1,4 +1,3 @@
-import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
 import 'package:caffeine_tracker/widgets/consumption_form.dart';
 import 'package:flutter/material.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
@@ -214,6 +213,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
         children: [
           AppTopNavigation(
             userProfile: _userProfile,
+            showBackButton: true,
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -227,7 +227,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 

@@ -4,7 +4,6 @@ import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/services/auth_service.dart';
 import 'package:caffeine_tracker/widgets/drink_card.dart';
-import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/utils/responsive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -134,9 +133,6 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
           ),
         ],
       ),
-      bottomNavigationBar: r.isMobile
-          ? const AppBottomNavigation(currentIndex: 1)
-          : null,
     );
   }
 

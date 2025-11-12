@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
+  final Function(int) onTap;
 
   const AppBottomNavigation({
     super.key,
     required this.currentIndex,
+    required this.onTap,
   });
 
   @override
@@ -17,22 +19,7 @@ class AppBottomNavigation extends StatelessWidget {
       unselectedItemColor: const Color(0xFFA67C52),
       showSelectedLabels: true,
       showUnselectedLabels: true,
-      onTap: (int index) {
-        switch (index) {
-          case 0:
-            Navigator.pushNamed(context, '/dashboard');
-            break;
-          case 1:
-            Navigator.pushNamed(context, '/coffeelist');
-            break;
-          case 2:
-            Navigator.pushNamed(context, '/logs');
-            break;
-          case 3:
-            Navigator.pushNamed(context, '/profile');
-            break;
-        }
-      },
+      onTap: onTap,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
@@ -40,7 +27,7 @@ class AppBottomNavigation extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.emoji_food_beverage_outlined),
-          label: "Add Drinks",
+          label: "Drinks",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.calendar_month_outlined),
