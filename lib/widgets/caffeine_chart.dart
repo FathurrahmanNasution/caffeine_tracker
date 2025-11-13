@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 enum ChartType { weekly, monthly, yearly }
+
+double _getMaxCaffeineForType(ChartType type) {
+  switch (type) {
+    case ChartType.weekly:
+      return 600;
+    case ChartType.monthly:
+      return 3500;
+    case ChartType.yearly:
+      return 10000;
+  }
+}
 
 class CaffeineChart extends StatelessWidget {
   final Map<dynamic, double> data;
   final ChartType type;
   final List<String> labels;
   final Function(dynamic key) onTap;
+  final bool Function(dynamic key)? shouldShowPoint;
 
   const CaffeineChart({
     super.key,
@@ -14,6 +27,7 @@ class CaffeineChart extends StatelessWidget {
     required this.type,
     required this.labels,
     required this.onTap,
+    this.shouldShowPoint,
   });
 
   @override
@@ -26,21 +40,49 @@ class CaffeineChart extends StatelessWidget {
           onTapDown: (details) {
             final RenderBox box = context.findRenderObject() as RenderBox;
             final localPosition = details.localPosition;
-            final currentDay = DateTime.now().day;
 
-            const double chartPadding = 30.0;
-            final chartWidth = box.size.width - chartPadding;
+            const double labelOffset = 25.0;
             final sortedKeys = data.keys.toList()..sort();
 
+            // Hitung maxCaffeine untuk normalisasi Y
+            double maxCaffeine = _getMaxCaffeineForType(type);
+            final maxFromData = data.values.fold(0.0, (max, val) => val > max ? val : max);
+            if (maxFromData > maxCaffeine) {
+              maxCaffeine = ((maxFromData / 50).ceil() * 50).toDouble();
+            }
+
+            double minDistance = double.infinity;
+            dynamic closestKey;
+
+            final totalPoints = labels.length;
+
             for (int i = 0; i < sortedKeys.length; i++) {
-              if (sortedKeys[i] >= currentDay) continue;
+              final key = sortedKeys[i];
 
-              double pointX = (i * chartWidth / (sortedKeys.length - 1)) + (chartPadding / 2);
-
-              if ((localPosition.dx - pointX).abs() < 25) {
-                onTap(sortedKeys[i]);
-                break;
+              if (shouldShowPoint != null && !shouldShowPoint!(key)) {
+                continue;
               }
+
+              int keyIndex = type == ChartType.yearly ? (key as int) - 1 : i;
+
+              double pointX = (keyIndex * (box.size.width - labelOffset * 2) / (totalPoints - 1)) + labelOffset;
+
+              double caffeine = data[key] ?? 0;
+              double normalizedValue = maxCaffeine > 0 ? caffeine / maxCaffeine : 0;
+              double pointY = box.size.height - (normalizedValue * box.size.height);
+
+              double distanceX = localPosition.dx - pointX;
+              double distanceY = localPosition.dy - pointY;
+              double distance = sqrt(pow(distanceX, 2) + pow(distanceY, 2));
+
+              if (distance < minDistance && distance < 30) {
+                minDistance = distance;
+                closestKey = key;
+              }
+            }
+
+            if (closestKey != null) {
+              onTap(closestKey);
             }
           },
           child: CustomPaint(
@@ -48,7 +90,7 @@ class CaffeineChart extends StatelessWidget {
               data: data,
               labels: labels,
               type: type,
-              currentDay: DateTime.now().day,
+              shouldShowPoint: shouldShowPoint,
             ),
             child: Container(),
           ),
@@ -62,13 +104,13 @@ class CaffeineChartPainter extends CustomPainter {
   final Map<dynamic, double> data;
   final List<String> labels;
   final ChartType type;
-  final int currentDay;
+  final bool Function(dynamic key)? shouldShowPoint;
 
   CaffeineChartPainter({
     required this.data,
     required this.labels,
     required this.type,
-    required this.currentDay,
+    this.shouldShowPoint,
   });
 
   @override
@@ -98,14 +140,12 @@ class CaffeineChartPainter extends CustomPainter {
 
     const double labelOffset = 25.0;
 
-    // Find max value untuk scaling
-    double maxCaffeine = _getMaxCaffeineForType();
+    double maxCaffeine = _getMaxCaffeineForType(type);
     final maxFromData = data.values.fold(0.0, (max, val) => val > max ? val : max);
     if (maxFromData > maxCaffeine) {
       maxCaffeine = ((maxFromData / 50).ceil() * 50).toDouble();
     }
 
-    // Generate points from data
     final path = Path();
     final List<Offset> points = [];
 
@@ -118,14 +158,12 @@ class CaffeineChartPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
-    // Draw path
     if (points.isNotEmpty) {
       path.moveTo(points[0].dx, points[0].dy);
       for (int i = 1; i < points.length; i++) {
         path.lineTo(points[i].dx, points[i].dy);
       }
 
-      // Fill area
       final fillPath = Path.from(path);
       fillPath.lineTo(size.width, size.height);
       fillPath.lineTo(0, size.height);
@@ -135,7 +173,9 @@ class CaffeineChartPainter extends CustomPainter {
 
       for (int i = 0; i < points.length; i++) {
         final dayKey = sortedKeys[i];
-        if (dayKey < currentDay) {
+        bool canShow = shouldShowPoint == null || shouldShowPoint!(dayKey);
+
+        if (canShow) {
           canvas.drawCircle(points[i], 5, pointPaint);
         }
       }
@@ -179,17 +219,6 @@ class CaffeineChartPainter extends CustomPainter {
     }
   }
 
-  double _getMaxCaffeineForType() {
-    switch (type) {
-      case ChartType.weekly:
-        return 600;
-      case ChartType.monthly:
-        return 500;
-      case ChartType.yearly:
-        return 1000;
-    }
-  }
-
   List<String> _getYAxisLabels(double maxCaffeine) {
     final step = (maxCaffeine / 5).ceil();
     return List.generate(6, (i) => (i * step).toString());
@@ -200,6 +229,6 @@ class CaffeineChartPainter extends CustomPainter {
     return oldDelegate.data != data ||
         oldDelegate.labels != labels ||
         oldDelegate.type != type ||
-        oldDelegate.currentDay != currentDay;
+        oldDelegate.shouldShowPoint != shouldShowPoint;
   }
 }

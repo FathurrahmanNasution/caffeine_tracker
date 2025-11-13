@@ -1,7 +1,6 @@
 import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/services/auth_service.dart';
-import 'package:caffeine_tracker/widgets/app_bottom_navigation.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
@@ -13,10 +12,10 @@ class TrackerPage extends StatefulWidget {
   const TrackerPage({super.key});
 
   @override
-  State<TrackerPage> createState() => _TrackerPageState();
+  State<TrackerPage> createState() => TrackerPageState();
 }
 
-class _TrackerPageState extends State<TrackerPage> {
+class TrackerPageState extends State<TrackerPage> {
   final _auth = AuthService();
   final _firestore = FirebaseFirestore.instance;
   UserModel? _userProfile;
@@ -26,13 +25,35 @@ class _TrackerPageState extends State<TrackerPage> {
   DateTime selectedDate = DateTime.now();
   String sortBy = 'Weekly';
   String filterWeek = 'First Week';
-  String filterMonth = 'January';
+  String filterMonth = 'November';
   int filterYear = DateTime.now().year;
 
   @override
   void initState() {
     super.initState();
+
+    filterMonth = DateFormat('MMMM').format(DateTime.now());
+    filterYear = DateTime.now().year;
+
+    final now = DateTime.now();
+    final dayOfMonth = now.day;
+    if (dayOfMonth <= 7) {
+      filterWeek = 'First Week';
+    } else if (dayOfMonth <= 14) {
+      filterWeek = 'Second Week';
+    } else if (dayOfMonth <= 21) {
+      filterWeek = 'Third Week';
+    } else if (dayOfMonth <= 28) {
+      filterWeek = 'Fourth Week';
+    } else {
+      filterWeek = 'Fifth Week';
+    }
+
     _loadUserProfile();
+    _loadConsumptions();
+  }
+
+  void refreshData() {
     _loadConsumptions();
   }
 
@@ -79,7 +100,67 @@ class _TrackerPageState extends State<TrackerPage> {
         });
       }
     } catch (e) {
-      print('Error loading consumptions: $e');
+      // Handle error silently
+    }
+  }
+
+  bool _shouldShowDataPoint(dynamic key) {
+    final now = DateTime.now();
+
+    if (sortBy == 'Weekly') {
+      final targetDay = key as int;
+      final targetDate = DateTime(filterYear, _getMonthNumber(filterMonth), targetDay);
+
+
+      final isBeforeOrToday = targetDate.isBefore(now);
+      final isPastMonth = (filterYear < now.year) ||
+          (filterYear == now.year && _getMonthNumber(filterMonth) < now.month);
+
+      if (isPastMonth) {
+        return targetDate.month == _getMonthNumber(filterMonth) &&
+            targetDate.year == filterYear;
+      }
+
+      return isBeforeOrToday &&
+          targetDate.month == _getMonthNumber(filterMonth) &&
+          targetDate.year == filterYear;
+    }
+    else if (sortBy == 'Monthly') {
+      final targetWeek = key as int;
+      final currentDay = now.day;
+      int currentWeekNumber = 1;
+
+      if (currentDay <= 7) {
+        currentWeekNumber = 1;
+      } else if (currentDay <= 14) {
+        currentWeekNumber = 2;
+      } else if (currentDay <= 21) {
+        currentWeekNumber = 3;
+      } else if (currentDay <= 28) {
+        currentWeekNumber = 4;
+      } else {
+        currentWeekNumber = 5;
+      }
+
+      final isPastMonth = (filterYear < now.year) ||
+          (filterYear == now.year && _getMonthNumber(filterMonth) < now.month);
+
+      if (isPastMonth) {
+        return true;
+      }
+
+      return targetWeek <= currentWeekNumber &&
+          filterMonth == DateFormat('MMMM').format(now) &&
+          filterYear == now.year;
+    }
+    else {
+      final targetMonth = key as int;
+
+      if (filterYear < now.year) {
+        return true;
+      }
+
+      return targetMonth <= now.month && filterYear == now.year;
     }
   }
 
@@ -91,39 +172,36 @@ class _TrackerPageState extends State<TrackerPage> {
     }).toList();
   }
 
-  // Data untuk chart berdasarkan sortBy
   Map<dynamic, double> _getChartData() {
+    Map<dynamic, double> data;
+
     if (sortBy == 'Weekly') {
-      return _getWeeklyData();
+      data = _getWeeklyData();
     } else if (sortBy == 'Monthly') {
-      return _getMonthlyData();
+      data = _getMonthlyData();
     } else {
-      return _getYearlyData();
+      data = _getYearlyData();
     }
+
+    return data;
   }
 
   Map<int, double> _getWeeklyData() {
-    final now = DateTime.now();
-    final currentDay = now.day;
-
     int weekStart = _getWeekStart(filterWeek);
     int weekEnd = _getWeekEnd(filterWeek, filterYear, _getMonthNumber(filterMonth));
 
     Map<int, double> weeklyData = {};
 
-    // Initialize all days in the week
     for (int i = weekStart; i <= weekEnd; i++) {
       weeklyData[i] = 0;
     }
 
-    // Calculate actual data from consumptions
     for (var consumption in _consumptions) {
       final consumedDate = consumption.consumedAt;
       if (consumedDate.year == filterYear &&
           consumedDate.month == _getMonthNumber(filterMonth) &&
           consumedDate.day >= weekStart &&
-          consumedDate.day <= weekEnd &&
-          consumedDate.day < currentDay) {
+          consumedDate.day <= weekEnd) {
         weeklyData[consumedDate.day] =
             (weeklyData[consumedDate.day] ?? 0) + consumption.caffeineContent;
       }
@@ -133,8 +211,6 @@ class _TrackerPageState extends State<TrackerPage> {
   }
 
   Map<int, double> _getMonthlyData() {
-    final now = DateTime.now();
-    final currentDay = now.day;
     final monthNumber = _getMonthNumber(filterMonth);
     final daysInMonth = DateTime(filterYear, monthNumber + 1, 0).day;
 
@@ -148,12 +224,10 @@ class _TrackerPageState extends State<TrackerPage> {
       if (daysInMonth > 28) {'week': 5, 'start': 29, 'end': daysInMonth},
     ];
 
-    // Initialize all weeks
     for (var week in weeks) {
       monthlyData[week['week']] = 0;
     }
 
-    // Calculate actual data from consumptions
     for (var consumption in _consumptions) {
       final consumedDate = consumption.consumedAt;
       if (consumedDate.year == filterYear &&
@@ -164,8 +238,7 @@ class _TrackerPageState extends State<TrackerPage> {
           int weekEnd = week['end'];
 
           if (consumedDate.day >= weekStart &&
-              consumedDate.day <= weekEnd &&
-              weekEnd < currentDay) {
+              consumedDate.day <= weekEnd) {
             monthlyData[week['week']] =
                 (monthlyData[week['week']] ?? 0) + consumption.caffeineContent;
             break;
@@ -183,15 +256,13 @@ class _TrackerPageState extends State<TrackerPage> {
 
     Map<int, double> yearlyData = {};
 
-    // Initialize all 12 months
     for (int i = 1; i <= 12; i++) {
       yearlyData[i] = 0;
     }
 
-    // Calculate actual data from consumptions
     for (var consumption in _consumptions) {
       final consumedDate = consumption.consumedAt;
-      if (consumedDate.year == filterYear && consumedDate.month < currentMonth) {
+      if (consumedDate.year == filterYear && consumedDate.month <= currentMonth) {
         yearlyData[consumedDate.month] =
             (yearlyData[consumedDate.month] ?? 0) + consumption.caffeineContent;
       }
@@ -287,10 +358,8 @@ class _TrackerPageState extends State<TrackerPage> {
     List<Map<String, dynamic>>? drinksList;
 
     if (sortBy == 'Weekly') {
-      // Weekly: show list of drinks for specific day
       title = 'Day $key';
 
-      // Get consumptions for that specific day
       final targetDate = DateTime(
         filterYear,
         _getMonthNumber(filterMonth),
@@ -321,16 +390,14 @@ class _TrackerPageState extends State<TrackerPage> {
 
       totalCaffeine = dayConsumptions.fold<double>(
           0.0,
-              (sum, log) => sum + log.caffeineContent
+              (total, log) => total + log.caffeineContent
       );
       description = '';
 
     } else if (sortBy == 'Monthly') {
-      // Monthly: show week summary
       final weekNames = ['First Week', 'Second Week', 'Third Week', 'Fourth Week', 'Fifth Week'];
       title = weekNames[key - 1];
 
-      // Calculate total for that week
       final monthNumber = _getMonthNumber(filterMonth);
       final weekStart = _getWeekStart(weekNames[key - 1]);
       final weekEnd = _getWeekEnd(weekNames[key - 1], filterYear, monthNumber);
@@ -340,12 +407,11 @@ class _TrackerPageState extends State<TrackerPage> {
             log.consumedAt.month == monthNumber &&
             log.consumedAt.day >= weekStart &&
             log.consumedAt.day <= weekEnd;
-      }).fold<double>(0.0, (sum, log) => sum + log.caffeineContent);
+      }).fold<double>(0.0, (total, log) => total + log.caffeineContent);
 
       description = 'Total caffeine consumed during $title';
 
     } else {
-      // Yearly: show month summary
       final months = ['January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'];
       title = '${months[key - 1]} $filterYear';
@@ -353,7 +419,7 @@ class _TrackerPageState extends State<TrackerPage> {
       totalCaffeine = _consumptions.where((log) {
         return log.consumedAt.year == filterYear &&
             log.consumedAt.month == key;
-      }).fold<double>(0.0, (sum, log) => sum + log.caffeineContent);
+      }).fold<double>(0.0, (total, log) => total + log.caffeineContent);
 
       description = 'Total caffeine consumed during ${months[key - 1]} $filterYear';
     }
@@ -362,7 +428,7 @@ class _TrackerPageState extends State<TrackerPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF6E3D2C),
+          backgroundColor: const Color(0xFFD6CCC2),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -371,15 +437,15 @@ class _TrackerPageState extends State<TrackerPage> {
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFFFFFFF),
-                    fontSize: 16,
+                    color: Color(0xFF000000),
+                    fontSize: 20,
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD5BBA2),
+                  color: Colors.brown[800],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -387,7 +453,7 @@ class _TrackerPageState extends State<TrackerPage> {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF6E3D2C),
+                    color: Color(0xFFFFFFFF),
                   ),
                 ),
               ),
@@ -449,12 +515,12 @@ class _TrackerPageState extends State<TrackerPage> {
           )
               : Text(
             description,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: Color(0xFF6E3D2C), fontSize: 16, fontWeight: FontWeight.w500),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close', style: TextStyle(color: Colors.white)),
+              child: const Text('Close', style: TextStyle(color: Color(0xFF6E3D2C), fontSize: 16)),
             ),
           ],
         );
@@ -477,7 +543,6 @@ class _TrackerPageState extends State<TrackerPage> {
     final monthDates = _generateMonthDates();
     final currentIndex = selectedDate.day - 1;
 
-    // Show 5 dates at a time
     final startIndex = (currentIndex ~/ 5) * 5;
     final endIndex = (startIndex + 5).clamp(0, monthDates.length);
 
@@ -489,7 +554,6 @@ class _TrackerPageState extends State<TrackerPage> {
       final currentDay = selectedDate.day;
 
       if (currentDay <= 5) {
-        // Go to previous month
         final prevMonth = DateTime(
           selectedDate.year,
           selectedDate.month - 1,
@@ -501,11 +565,9 @@ class _TrackerPageState extends State<TrackerPage> {
           0,
         ).day;
 
-        // Calculate which "page" to show in previous month
         final lastPageStart = ((daysInPrevMonth - 1) ~/ 5) * 5 + 1;
         selectedDate = DateTime(prevMonth.year, prevMonth.month, lastPageStart);
       } else {
-        // Go to previous 5 dates in current month
         final newDay = ((currentDay - 6) ~/ 5) * 5 + 1;
         selectedDate = DateTime(selectedDate.year, selectedDate.month, newDay);
       }
@@ -520,10 +582,8 @@ class _TrackerPageState extends State<TrackerPage> {
       final nextPageStart = currentPageStart + 5;
 
       if (nextPageStart > monthDates.length) {
-        // Go to next month
         selectedDate = DateTime(selectedDate.year, selectedDate.month + 1, 1);
       } else {
-        // Go to next 5 dates in current month
         selectedDate = DateTime(
           selectedDate.year,
           selectedDate.month,
@@ -624,7 +684,7 @@ class _TrackerPageState extends State<TrackerPage> {
   Future<void> _deleteConsumption(String consumptionId) async {
     try {
       await _firestore.collection('consumptions').doc(consumptionId).delete();
-      await _loadConsumptions(); // Reload data
+      await _loadConsumptions();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Drink deleted successfully'))
@@ -707,6 +767,7 @@ class _TrackerPageState extends State<TrackerPage> {
                       type: _getChartType(),
                       labels: _getChartLabels(),
                       onTap: _handleChartTap,
+                      shouldShowPoint: _shouldShowDataPoint,
                     )
                   else
                     Container(
@@ -890,7 +951,7 @@ class _TrackerPageState extends State<TrackerPage> {
             caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
             size: '${log.servingSize}ml',
             time: DateFormat('hh:mm a').format(log.consumedAt),
-            image: '☕', // Default icon, bisa disesuaikan
+            image: '☕',
             onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
             onDelete: () => _showDeleteDialog(log.id),
           );
