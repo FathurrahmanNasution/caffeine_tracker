@@ -53,6 +53,17 @@ class DashboardPageState extends State<DashboardPage> {
     };
   }
 
+  bool _shouldShowDataPoint(dynamic key) {
+    final now = DateTime.now();
+    final targetDay = key as int;
+    final targetDate = DateTime(now.year, now.month, targetDay);
+
+    return targetDate.isBefore(now) ||
+        (targetDate.year == now.year &&
+            targetDate.month == now.month &&
+            targetDate.day == now.day);
+  }
+
   Map<int, double> weeklyData = {
     0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0,
   };
@@ -157,7 +168,7 @@ class DashboardPageState extends State<DashboardPage> {
 
       for (var log in weekLogs) {
         final day = log.consumedAt.day;
-        if (day < currentDay) {
+        if (day <= currentDay) {
           newWeeklyData[day] = (newWeeklyData[day] ?? 0) + log.caffeineContent;
           newWeeklyDrinks[day]!.add(log);
         }
@@ -420,6 +431,7 @@ class DashboardPageState extends State<DashboardPage> {
                     type: ChartType.weekly,
                     labels: _getWeekLabels(),
                     onTap: (key) => _showDrinkDetails(context, key),
+                    shouldShowPoint: _shouldShowDataPoint,
                   ),
                   const SizedBox(height: 40),
 

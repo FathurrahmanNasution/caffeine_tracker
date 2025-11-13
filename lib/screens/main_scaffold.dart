@@ -20,6 +20,7 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   late int _currentIndex;
   final GlobalKey<DashboardPageState> _dashboardKey = GlobalKey();
+  final GlobalKey<TrackerPageState> _trackerKey = GlobalKey(); // ✅ Added
 
   @override
   void initState() {
@@ -31,6 +32,10 @@ class _MainScaffoldState extends State<MainScaffold> {
     _dashboardKey.currentState?.refreshData();
   }
 
+  void _refreshTracker() { // ✅ Added
+    _trackerKey.currentState?.refreshData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,7 +44,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         children: [
           DashboardPage(key: _dashboardKey),
           const CoffeeListPage(),
-          const TrackerPage(),
+          TrackerPage(key: _trackerKey), // ✅ Added key
           const ProfilePage(),
         ],
       ),
@@ -48,8 +53,12 @@ class _MainScaffoldState extends State<MainScaffold> {
         onTap: (index) {
           if (index != _currentIndex) {
             setState(() => _currentIndex = index);
+
+            // ✅ Refresh based on tab
             if (index == 0) {
               _refreshDashboard();
+            } else if (index == 2) {
+              _refreshTracker();
             }
           }
         },
