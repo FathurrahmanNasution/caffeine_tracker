@@ -96,6 +96,56 @@ class AuthService {
     }
   }
 
+  // Check if user is admin
+  Future<bool> isAdmin(String uid) async {
+    try {
+      final userDoc = await _fire.collection('users').doc(uid).get();
+      return userDoc.data()?['isAdmin'] as bool? ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Admin sign in - bypasses email verification
+  Future<UserModel?> signInAsAdmin(String username, String password) async {
+    final uname = _normalize(username);
+    
+    final unameRef = _fire.collection('usernames').doc(uname);
+    final unameDoc = await unameRef.get();
+    
+    if (!unameDoc.exists) {
+      throw Exception('Username not found.');
+    }
+    
+    final data = unameDoc.data();
+    final email = (data?['email'] as String?)?.trim();
+    
+    if (email == null || email.isEmpty) {
+      throw Exception('Internal mapping missing email.');
+    }
+    
+    final cred = await _auth.signInWithEmailAndPassword(email: email, password: password);
+    final user = cred.user;
+    
+    if (user == null) {
+      return null;
+    }
+
+    // Check if user is admin
+    final userDoc = await _fire.collection('users').doc(user.uid).get();
+    final userData = userDoc.data();
+    final isAdminUser = userData?['isAdmin'] as bool? ?? false;
+
+    if (!isAdminUser) {
+      await _auth.signOut();
+      throw Exception('Access denied. Admin privileges required.');
+    }
+
+    // Admin doesn't need email verification
+    return UserModel.fromMap(user.uid, userData);
+  }
+
+  // Regular user sign in - requires email verification
   Future<UserModel?> signInWithUsername(String username, String password) async {
     final uname = _normalize(username);
     
@@ -120,18 +170,107 @@ class AuthService {
       return null;
     }
 
+    final userDoc = await _fire.collection('users').doc(user.uid).get();
+    final userData = userDoc.data();
+    final isAdminUser = userData?['isAdmin'] as bool? ?? false;
+
+    // If admin, allow login without email verification
+    if (isAdminUser) {
+      return UserModel.fromMap(user.uid, userData);
+    }
+
+    // Regular users need email verification
     if (!user.emailVerified) {
       await _auth.signOut();
       throw Exception('Please verify your email before signing in. Check your inbox.');
     }
-
-    final userDoc = await _fire.collection('users').doc(user.uid).get();
     
     await _fire.collection('users').doc(user.uid).update({
       'emailVerified': true,
     });
     
-    return UserModel.fromMap(user.uid, userDoc.data());
+    return UserModel.fromMap(user.uid, userData);
+  }
+
+  // Create admin user (should be called manually or through a secure admin panel)
+  Future<UserModel?> createAdminUser({
+    required String username,
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    final uname = _normalize(username);
+    final emailNorm = email.trim();
+
+    final usernameValid = RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(uname);
+    if (!usernameValid) {
+      throw Exception('Username invalid. Use 3-30 chars: a-z, 0-9, underscore.');
+    }
+
+    try {
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: emailNorm,
+        password: password,
+      );
+      final user = cred.user;
+      if (user == null) {
+        return null;
+      }
+
+      final unameRef = _fire.collection('usernames').doc(uname);
+      final userRef = _fire.collection('users').doc(user.uid);
+
+      try {
+        await _fire.runTransaction((tx) async {
+          final unameSnap = await tx.get(unameRef);
+          if (unameSnap.exists) {
+            throw Exception('username-taken');
+          }
+          tx.set(userRef, {
+            'uid': user.uid,
+            'email': emailNorm,
+            'displayName': displayName ?? '',
+            'username': uname,
+            'photoUrl': null,
+            'createdAt': FieldValue.serverTimestamp(),
+            'authProvider': 'email',
+            'emailVerified': true,
+            'isAdmin': true,
+            'hasCompletedOnboarding': true,
+          }, SetOptions(merge: true));
+
+          tx.set(unameRef, {
+            'uid': user.uid,
+            'email': emailNorm,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        });
+
+      } catch (e) {
+        try {
+          await user.delete();
+        } catch (deleteError) {
+          throw Exception('Could not delete auth user: $deleteError');
+        }
+        if (e.toString().contains('username-taken')) {
+          throw Exception('Username already taken.');
+        }
+        rethrow;
+      }
+
+      if (displayName != null && displayName.isNotEmpty) {
+        await user.updateDisplayName(displayName);
+        await user.reload();
+      }
+
+      final doc = await userRef.get();
+      return UserModel.fromMap(user.uid, doc.data());
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        throw Exception('Email already in use.');
+      }
+      rethrow;
+    }
   }
 
   Future<void> resendVerificationEmail() async {

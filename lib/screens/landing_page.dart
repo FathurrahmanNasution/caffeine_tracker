@@ -19,21 +19,17 @@ class LandingPage extends StatelessWidget {
                 textAlign: TextAlign.center,
                 text: const TextSpan(
                   style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 22,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                   children: [
-                    TextSpan(text: "Track Your "),
+                    TextSpan(text: "Welcome to "),
                     TextSpan(
-                      text: "Caffeine",
-                      style: TextStyle(color: Color(0xFF874C2B)),
-                    ),
-                    TextSpan(text: ",\nTransform Your "),
-                    TextSpan(
-                      text: "Health",
-                      style: TextStyle(color: Color(0xFF4E8D7C)),
+                      text: "Caffeine Tracker",
+                      style: TextStyle(
+                        color: Color(0xFF5D4037),
+                      ),
                     ),
                   ],
                 ),

@@ -1,18 +1,15 @@
 import 'package:caffeine_tracker/screens/account_authorization_page.dart';
 import 'package:caffeine_tracker/screens/addotherdrink_page.dart';
 import 'package:caffeine_tracker/screens/admin_add_drink_page.dart';
+import 'package:caffeine_tracker/screens/admin_dashboard_page.dart';
 import 'package:caffeine_tracker/screens/change_password_page.dart';
-import 'package:caffeine_tracker/screens/coffeelist_page.dart';
-import 'package:caffeine_tracker/screens/dashboard_page.dart';
 import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
 import 'package:caffeine_tracker/screens/email_verification_page.dart';
 import 'package:caffeine_tracker/screens/landing_page.dart';
 import 'package:caffeine_tracker/screens/onboarding_page.dart';
-import 'package:caffeine_tracker/screens/profile_page.dart';
 import 'package:caffeine_tracker/screens/signin_page.dart';
 import 'package:caffeine_tracker/screens/signup_page.dart';
 import 'package:caffeine_tracker/screens/splash_screen.dart';
-import 'package:caffeine_tracker/screens/tracker_page.dart';
 import 'package:caffeine_tracker/screens/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -42,6 +39,7 @@ class MyApp extends StatelessWidget {
         '/landing': (context) => const LandingPage(),
         '/signup': (context) => const SignUpPage(),
         '/signin': (context) => const SignInPage(),
+        '/admin-dashboard': (context) => const AdminDashboardPage(),
         '/accountauthorization': (context) => const AccountAuthorizationPage(),
         '/change-password': (context) => const ChangePasswordPage(),
         '/onboarding': (context) => const OnboardingPage(),
