@@ -7,6 +7,8 @@ class UserModel {
   final String? username;
   final String? photoUrl;
   final DateTime? createdAt;
+  final bool isAdmin;
+  final bool emailVerified;
 
   UserModel({
     required this.uid,
@@ -15,6 +17,8 @@ class UserModel {
     this.username,
     this.photoUrl,
     this.createdAt,
+    this.isAdmin = false,
+    this.emailVerified = false,
   });
 
   factory UserModel.fromMap(String uid, Map<String, dynamic>? map) {
@@ -35,6 +39,8 @@ class UserModel {
       username: map['username'] as String?,
       photoUrl: map['photoUrl'] as String?,
       createdAt: created,
+      isAdmin: map['isAdmin'] as bool? ?? false,
+      emailVerified: map['emailVerified'] as bool? ?? false,
     );
   }
 
@@ -44,5 +50,7 @@ class UserModel {
         'username': username,
         'photoUrl': photoUrl,
         'createdAt': createdAt == null ? null : Timestamp.fromDate(createdAt!),
+        'isAdmin': isAdmin,
+        'emailVerified': emailVerified,
       };
 }

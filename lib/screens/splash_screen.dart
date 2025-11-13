@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,16 +35,38 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     Timer(const Duration(seconds: 3), _routeNext);
   }
 
-  void _routeNext() {
+  void _routeNext() async {
     if (!mounted) return;
     
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      // User is logged in, go to dashboard
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      // Check if user is admin
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        final isAdmin = userDoc.data()?['isAdmin'] as bool? ?? false;
+        
+        if (mounted) {
+          if (isAdmin) {
+            Navigator.pushReplacementNamed(context, '/admin-dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/dashboard');
+          }
+        }
+      } catch (e) {
+        // If error, default to user dashboard
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      }
     } else {
       // User is not logged in, go to landing page
-      Navigator.pushReplacementNamed(context, '/landing');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/landing');
+      }
     }
   }
 

@@ -330,15 +330,24 @@ class _SignInPageState extends State<SignInPage> {
       if (!mounted) return;
 
       if (user != null) {
-        // Check if user has completed onboarding
+        // Get user profile to check admin status
         final userDoc = await _auth.getProfileDoc(user.uid);
-        final hasCompletedOnboarding =
-            userDoc.data()?['hasCompletedOnboarding'] ?? false;
-
-        if (hasCompletedOnboarding) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
+        final userData = userDoc.data();
+        final isAdmin = userData?['isAdmin'] as bool? ?? false;
+        
+        // Check if admin
+        if (isAdmin) {
+          // Redirect to admin dashboard
+          Navigator.pushReplacementNamed(context, '/admin-dashboard');
         } else {
-          Navigator.pushReplacementNamed(context, '/onboarding');
+          // Check if regular user has completed onboarding
+          final hasCompletedOnboarding = userData?['hasCompletedOnboarding'] ?? false;
+          
+          if (hasCompletedOnboarding) {
+            Navigator.pushReplacementNamed(context, '/dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/onboarding');
+          }
         }
       } else {
         _showSnackBar("Sign in failed. Please try again.");
