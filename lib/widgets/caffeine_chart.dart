@@ -33,7 +33,7 @@ class CaffeineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 30, right: 6),
+      padding: const EdgeInsets.only(left: 45, right: 15, top: 10, bottom: 10),
       child: SizedBox(
         height: 200,
         child: GestureDetector(
@@ -187,14 +187,14 @@ class CaffeineChartPainter extends CustomPainter {
       final labelPainter = TextPainter(
         text: TextSpan(
           text: yLabels[i],
-          style: const TextStyle(color: Colors.black54, fontSize: 13),
+          style: const TextStyle(color: Colors.black54, fontSize: 11),
         ),
         textDirection: TextDirection.ltr,
       );
       labelPainter.layout();
       labelPainter.paint(
         canvas,
-        Offset(-30, size.height - (i * size.height / (yLabels.length - 1)) - 5),
+        Offset(-40, size.height - (i * size.height / (yLabels.length - 1)) - 6),
       );
     }
 
@@ -203,7 +203,7 @@ class CaffeineChartPainter extends CustomPainter {
       final labelPainter = TextPainter(
         text: TextSpan(
           text: labels[i],
-          style: const TextStyle(color: Colors.black54, fontSize: 14),
+          style: const TextStyle(color: Colors.black54, fontSize: 12),
         ),
         textDirection: TextDirection.ltr,
       );

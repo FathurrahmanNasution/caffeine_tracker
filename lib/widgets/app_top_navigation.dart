@@ -35,14 +35,14 @@ class AppTopNavigation extends StatelessWidget {
             width: 40,
             child: showBackButton
                 ? IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Color(0xFF42261D),
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                  )
+              icon: const Icon(
+                Icons.arrow_back_ios,
+                color: Color(0xFF42261D),
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+              padding: EdgeInsets.zero,
+            )
                 : const SizedBox(),
           ),
 
@@ -51,29 +51,31 @@ class AppTopNavigation extends StatelessWidget {
             child: Center(
               child: GestureDetector(
                 onTap:
-                    onLogoTap ??
-                    () {
+                onLogoTap ??
+                        () {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/dashboard',
-                        (route) => false,
+                            (route) => false,
                       );
                     },
                 child: Image.asset(
                   "assets/images/coffee.png",
                   height: height * 0.05,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.local_cafe, size: 40),
+                  const Icon(Icons.local_cafe, size: 40),
                 ),
               ),
             ),
           ),
 
-          GestureDetector(
-            onTap: () {
-              print('Profile icon tapped');
-              _showProfileMenu(context);
-            },
+          // Right: Profile Menu Button
+          PopupMenuButton<String>(
+            offset: const Offset(0, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
             child: CircleAvatar(
               radius: 20,
               backgroundColor: const Color(0xFFE8DED1),
@@ -84,166 +86,149 @@ class AppTopNavigation extends StatelessWidget {
                   ? const Icon(Icons.person, size: 20, color: Color(0xFF42261D))
                   : null,
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            itemBuilder: (BuildContext context) {
+              final auth = FirebaseAuth.instance;
+              final user = auth.currentUser;
+              final email = user?.email ?? 'No email';
+              final displayName =
+                  userProfile?.displayName ?? userProfile?.username ?? 'User';
 
-  void _showProfileMenu(BuildContext context) {
-    print('Showing profile menu');
-
-    final auth = FirebaseAuth.instance;
-    final user = auth.currentUser;
-    final email = user?.email ?? 'No email';
-    final displayName =
-        userProfile?.displayName ?? userProfile?.username ?? 'User';
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black26,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          alignment: Alignment.topRight,
-          insetPadding: const EdgeInsets.only(top: 80, right: 20),
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 280,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6CCC2),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Profile Header
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD6CCC2),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
+              return [
+                // Profile Header (non-clickable)
+                PopupMenuItem<String>(
+                  enabled: false,
+                  padding: EdgeInsets.zero,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFD6CCC2),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF000000),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF42261D),
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
+                ),
+
+                // Divider
+                const PopupMenuItem<String>(
+                  enabled: false,
+                  height: 1,
+                  padding: EdgeInsets.zero,
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFD6CCC2),
+                  ),
+                ),
+
+                // Change Password
+                PopupMenuItem<String>(
+                  value: 'change_password',
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF000000),
-                          fontWeight: FontWeight.w400,
-                        ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.lock_outline,
+                        size: 22,
+                        color: Color(0xFF5B3020),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF42261D),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Change Password',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF000000),
                           fontWeight: FontWeight.w500,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
 
-                const Divider(
+                // Divider
+                const PopupMenuItem<String>(
+                  enabled: false,
                   height: 1,
-                  thickness: 1,
-                  color: Color(0xFFD6CCC2),
+                  padding: EdgeInsets.zero,
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFD6CCC2),
+                  ),
                 ),
 
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.lock_outline,
-                  label: 'Change Password',
-                  backgroundColor: const Color(0xFFF5EBE0),
-                  textColor: const Color(0xFF000000),
-                  iconColor: const Color(0xFF5B3020),
-                  onTap: () {
-                    Navigator.pop(dialogContext);
-                    Navigator.pushNamed(context, '/changepassword');
-                  },
+                // Logout
+                PopupMenuItem<String>(
+                  value: 'logout',
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.logout_outlined,
+                        size: 22,
+                        color: Color(0xFF5B3020),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF000000),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              ];
+            },
+            onSelected: (String value) async {
+              final auth = FirebaseAuth.instance;
 
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Color(0xFFD6CCC2),
-                ),
-
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.logout_outlined,
-                  label: 'Logout',
-                  backgroundColor: const Color(0xFFF5EBE0),
-                  textColor: const Color(0xFF000000),
-                  iconColor: const Color(0xFF5B3020),
-                  onTap: () async {
-                    Navigator.pop(dialogContext);
-                    await auth.signOut();
-                    if (context.mounted) {
-                      Navigator.pushReplacementNamed(context, '/signin');
-                    }
-                  },
-                  isLast: true,
-                ),
-              ],
-            ),
+              if (value == 'change_password') {
+                Navigator.pushNamed(context, '/change-password');
+              } else if (value == 'logout') {
+                await auth.signOut();
+                if (context.mounted) {
+                  Navigator.pushReplacementNamed(context, '/signin');
+                }
+              }
+            },
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMenuItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Color? backgroundColor,
-    Color? textColor,
-    Color? iconColor,
-    bool isLast = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: isLast
-              ? const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                )
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: iconColor ?? Colors.grey[800]),
-            const SizedBox(width: 16),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: textColor ?? Colors.grey[800],
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
