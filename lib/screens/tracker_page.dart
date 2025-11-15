@@ -26,14 +26,18 @@ class TrackerPageState extends State<TrackerPage> {
   String sortBy = 'Weekly';
   String filterWeek = 'First Week';
   String filterMonth = 'November';
-  int filterYear = DateTime.now().year;
+  int filterYear = DateTime
+      .now()
+      .year;
 
   @override
   void initState() {
     super.initState();
 
     filterMonth = DateFormat('MMMM').format(DateTime.now());
-    filterYear = DateTime.now().year;
+    filterYear = DateTime
+        .now()
+        .year;
 
     final now = DateTime.now();
     final dayOfMonth = now.day;
@@ -109,12 +113,17 @@ class TrackerPageState extends State<TrackerPage> {
 
     if (sortBy == 'Weekly') {
       final targetDay = key as int;
-      final targetDate = DateTime(filterYear, _getMonthNumber(filterMonth), targetDay);
-
+      final targetDate = DateTime(
+        filterYear,
+        _getMonthNumber(filterMonth),
+        targetDay,
+      );
 
       final isBeforeOrToday = targetDate.isBefore(now);
-      final isPastMonth = (filterYear < now.year) ||
-          (filterYear == now.year && _getMonthNumber(filterMonth) < now.month);
+      final isPastMonth =
+          (filterYear < now.year) ||
+              (filterYear == now.year &&
+                  _getMonthNumber(filterMonth) < now.month);
 
       if (isPastMonth) {
         return targetDate.month == _getMonthNumber(filterMonth) &&
@@ -124,8 +133,7 @@ class TrackerPageState extends State<TrackerPage> {
       return isBeforeOrToday &&
           targetDate.month == _getMonthNumber(filterMonth) &&
           targetDate.year == filterYear;
-    }
-    else if (sortBy == 'Monthly') {
+    } else if (sortBy == 'Monthly') {
       final targetWeek = key as int;
       final currentDay = now.day;
       int currentWeekNumber = 1;
@@ -142,8 +150,10 @@ class TrackerPageState extends State<TrackerPage> {
         currentWeekNumber = 5;
       }
 
-      final isPastMonth = (filterYear < now.year) ||
-          (filterYear == now.year && _getMonthNumber(filterMonth) < now.month);
+      final isPastMonth =
+          (filterYear < now.year) ||
+              (filterYear == now.year &&
+                  _getMonthNumber(filterMonth) < now.month);
 
       if (isPastMonth) {
         return true;
@@ -152,8 +162,7 @@ class TrackerPageState extends State<TrackerPage> {
       return targetWeek <= currentWeekNumber &&
           filterMonth == DateFormat('MMMM').format(now) &&
           filterYear == now.year;
-    }
-    else {
+    } else {
       final targetMonth = key as int;
 
       if (filterYear < now.year) {
@@ -188,7 +197,11 @@ class TrackerPageState extends State<TrackerPage> {
 
   Map<int, double> _getWeeklyData() {
     int weekStart = _getWeekStart(filterWeek);
-    int weekEnd = _getWeekEnd(filterWeek, filterYear, _getMonthNumber(filterMonth));
+    int weekEnd = _getWeekEnd(
+      filterWeek,
+      filterYear,
+      _getMonthNumber(filterMonth),
+    );
 
     Map<int, double> weeklyData = {};
 
@@ -232,13 +245,11 @@ class TrackerPageState extends State<TrackerPage> {
       final consumedDate = consumption.consumedAt;
       if (consumedDate.year == filterYear &&
           consumedDate.month == monthNumber) {
-
         for (var week in weeks) {
           int weekStart = week['start'];
           int weekEnd = week['end'];
 
-          if (consumedDate.day >= weekStart &&
-              consumedDate.day <= weekEnd) {
+          if (consumedDate.day >= weekStart && consumedDate.day <= weekEnd) {
             monthlyData[week['week']] =
                 (monthlyData[week['week']] ?? 0) + consumption.caffeineContent;
             break;
@@ -262,7 +273,8 @@ class TrackerPageState extends State<TrackerPage> {
 
     for (var consumption in _consumptions) {
       final consumedDate = consumption.consumedAt;
-      if (consumedDate.year == filterYear && consumedDate.month <= currentMonth) {
+      if (consumedDate.year == filterYear &&
+          consumedDate.month <= currentMonth) {
         yearlyData[consumedDate.month] =
             (yearlyData[consumedDate.month] ?? 0) + consumption.caffeineContent;
       }
@@ -273,30 +285,54 @@ class TrackerPageState extends State<TrackerPage> {
 
   int _getWeekStart(String week) {
     switch (week) {
-      case 'First Week': return 1;
-      case 'Second Week': return 8;
-      case 'Third Week': return 15;
-      case 'Fourth Week': return 22;
-      case 'Fifth Week': return 29;
-      default: return 1;
+      case 'First Week':
+        return 1;
+      case 'Second Week':
+        return 8;
+      case 'Third Week':
+        return 15;
+      case 'Fourth Week':
+        return 22;
+      case 'Fifth Week':
+        return 29;
+      default:
+        return 1;
     }
   }
 
   int _getWeekEnd(String week, int year, int month) {
     final daysInMonth = DateTime(year, month + 1, 0).day;
     switch (week) {
-      case 'First Week': return 7;
-      case 'Second Week': return 14;
-      case 'Third Week': return 21;
-      case 'Fourth Week': return 28;
-      case 'Fifth Week': return daysInMonth;
-      default: return 7;
+      case 'First Week':
+        return 7;
+      case 'Second Week':
+        return 14;
+      case 'Third Week':
+        return 21;
+      case 'Fourth Week':
+        return 28;
+      case 'Fifth Week':
+        return daysInMonth;
+      default:
+        return 7;
     }
   }
 
   int _getMonthNumber(String monthName) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     return months.indexOf(monthName) + 1;
   }
 
@@ -322,7 +358,11 @@ class TrackerPageState extends State<TrackerPage> {
 
   List<String> _getWeeklyLabels() {
     int weekStart = _getWeekStart(filterWeek);
-    int weekEnd = _getWeekEnd(filterWeek, filterYear, _getMonthNumber(filterMonth));
+    int weekEnd = _getWeekEnd(
+      filterWeek,
+      filterYear,
+      _getMonthNumber(filterMonth),
+    );
 
     List<String> labels = [];
     for (int i = weekStart; i <= weekEnd; i++) {
@@ -375,53 +415,79 @@ class TrackerPageState extends State<TrackerPage> {
       if (dayConsumptions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('No drinks at that day'),
-              duration: Duration(seconds: 1)
+            content: Text('No drinks at that day'),
+            duration: Duration(seconds: 1),
           ),
         );
         return;
       }
 
-      drinksList = dayConsumptions.map((log) => {
-        'name': log.drinkName,
-        'caffeine': log.caffeineContent,
-        'size': log.servingSize,
-      }).toList();
+      drinksList = dayConsumptions
+          .map(
+            (log) =>
+        {
+          'name': log.drinkName,
+          'caffeine': log.caffeineContent,
+          'size': log.servingSize,
+        },
+      )
+          .toList();
 
       totalCaffeine = dayConsumptions.fold<double>(
-          0.0,
-              (total, log) => total + log.caffeineContent
+        0.0,
+            (total, log) => total + log.caffeineContent,
       );
       description = '';
-
     } else if (sortBy == 'Monthly') {
-      final weekNames = ['First Week', 'Second Week', 'Third Week', 'Fourth Week', 'Fifth Week'];
+      final weekNames = [
+        'First Week',
+        'Second Week',
+        'Third Week',
+        'Fourth Week',
+        'Fifth Week',
+      ];
       title = weekNames[key - 1];
 
       final monthNumber = _getMonthNumber(filterMonth);
       final weekStart = _getWeekStart(weekNames[key - 1]);
       final weekEnd = _getWeekEnd(weekNames[key - 1], filterYear, monthNumber);
 
-      totalCaffeine = _consumptions.where((log) {
+      totalCaffeine = _consumptions
+          .where((log) {
         return log.consumedAt.year == filterYear &&
             log.consumedAt.month == monthNumber &&
             log.consumedAt.day >= weekStart &&
             log.consumedAt.day <= weekEnd;
-      }).fold<double>(0.0, (total, log) => total + log.caffeineContent);
+      })
+          .fold<double>(0.0, (total, log) => total + log.caffeineContent);
 
       description = 'Total caffeine consumed during $title';
-
     } else {
-      final months = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
+      final months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
       title = '${months[key - 1]} $filterYear';
 
-      totalCaffeine = _consumptions.where((log) {
+      totalCaffeine = _consumptions
+          .where((log) {
         return log.consumedAt.year == filterYear &&
             log.consumedAt.month == key;
-      }).fold<double>(0.0, (total, log) => total + log.caffeineContent);
+      })
+          .fold<double>(0.0, (total, log) => total + log.caffeineContent);
 
-      description = 'Total caffeine consumed during ${months[key - 1]} $filterYear';
+      description =
+      'Total caffeine consumed during ${months[key - 1]} $filterYear';
     }
 
     showDialog(
@@ -443,7 +509,10 @@ class TrackerPageState extends State<TrackerPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.brown[800],
                   borderRadius: BorderRadius.circular(8),
@@ -498,7 +567,8 @@ class TrackerPageState extends State<TrackerPage> {
                               ),
                             ),
                             Text(
-                              '${(d['caffeine'] as double).toStringAsFixed(1)}mg ~ ${d['size']}ml',
+                              '${(d['caffeine'] as double).toStringAsFixed(
+                                  1)}mg ~ ${d['size']}ml',
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF6E3D2C),
@@ -515,12 +585,19 @@ class TrackerPageState extends State<TrackerPage> {
           )
               : Text(
             description,
-            style: TextStyle(color: Color(0xFF6E3D2C), fontSize: 16, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              color: Color(0xFF6E3D2C),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close', style: TextStyle(color: Color(0xFF6E3D2C), fontSize: 16)),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: Color(0xFF6E3D2C), fontSize: 16),
+              ),
             ),
           ],
         );
@@ -636,7 +713,9 @@ class TrackerPageState extends State<TrackerPage> {
                     dropdownColor: const Color(0xFFD5BBA2),
                     isExpanded: true,
                     items: List.generate(10, (index) {
-                      final year = DateTime.now().year - 5 + index;
+                      final year = DateTime
+                          .now()
+                          .year - 5 + index;
                       return DropdownMenuItem(
                         value: year,
                         child: Text(
@@ -687,14 +766,14 @@ class TrackerPageState extends State<TrackerPage> {
       await _loadConsumptions();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Drink deleted successfully'))
+          const SnackBar(content: Text('Drink deleted successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting drink: $e'))
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting drink: $e')));
       }
     }
   }
@@ -747,9 +826,7 @@ class TrackerPageState extends State<TrackerPage> {
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          AppTopNavigation(
-            userProfile: _userProfile,
-          ),
+          AppTopNavigation(userProfile: _userProfile),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -771,20 +848,57 @@ class TrackerPageState extends State<TrackerPage> {
                     )
                   else
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD5BBA2),
-                        borderRadius: BorderRadius.circular(12),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 40,
                       ),
-                      child: Text(
-                        'Not enough data to load ${sortBy.toLowerCase()} chart',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF6E3D2C),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      padding: const EdgeInsets.all(30),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5EBE0),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Oh no! ${sortBy == 'Weekly' ? 'Weekly' : sortBy ==
+                                'Monthly'
+                                ? 'Monthly'
+                                : 'Yearly'} Intake Unavailable',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Color(0xFF4B2C20),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Image.asset(
+                            "assets/images/sadcoffee.png",
+                            width: 150,
+                            height: 150,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.coffee_outlined,
+                                size: 100,
+                                color: Color(0xFF6E3D2C),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'It looks like you haven\'t logged enough drinks this ${sortBy
+                                .toLowerCase() == 'weekly' ? 'week' : sortBy
+                                .toLowerCase() == 'monthly'
+                                ? 'month'
+                                : 'year'}. Add a few more and we\'ll calculate your total!',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Color(0xFF6E3D2C),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 80),
@@ -925,17 +1039,17 @@ class TrackerPageState extends State<TrackerPage> {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
+          height: 200,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: const Color(0xFFD5BBA2).withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Text(
-            'No drinks logged for this day',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6E3D2C),
+          child: const Center(
+            child: Text(
+              'No drinks logged for this day',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Color(0xFF6E3D2C)),
             ),
           ),
         ),
@@ -944,18 +1058,25 @@ class TrackerPageState extends State<TrackerPage> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: todayConsumptions.map((log) {
-          return ConsumptionLogCard(
-            name: log.drinkName,
-            caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
-            size: '${log.servingSize}ml',
-            time: DateFormat('hh:mm a').format(log.consumedAt),
-            image: '☕',
-            onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
-            onDelete: () => _showDeleteDialog(log.id),
-          );
-        }).toList(),
+      child: SizedBox(
+        height: 250,
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: todayConsumptions.length,
+          itemBuilder: (context, index) {
+            final log = todayConsumptions[index];
+            return ConsumptionLogCard(
+              name: log.drinkName,
+              caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
+              size: '${log.servingSize}ml',
+              time: DateFormat('hh:mm a').format(log.consumedAt),
+              image: '☕',
+              onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
+              onDelete: () => _showDeleteDialog(log.id),
+            );
+          },
+        ),
       ),
     );
   }
@@ -979,21 +1100,28 @@ class TrackerPageState extends State<TrackerPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildDropdown(sortBy, ['Weekly', 'Monthly', 'Yearly'], (value) {
+                _buildDropdown(
+                    sortBy, ['Weekly', 'Monthly', 'Yearly'], (value,) {
                   setState(() {
                     sortBy = value!;
                   });
                 }),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 if (sortBy == 'Weekly') ...[
                   _buildDropdown(
                     filterWeek,
-                    ['First Week', 'Second Week', 'Third Week', 'Fourth Week', 'Fifth Week'],
+                    [
+                      'First Week',
+                      'Second Week',
+                      'Third Week',
+                      'Fourth Week',
+                      'Fifth Week',
+                    ],
                         (value) {
                       setState(() => filterWeek = value!);
                     },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                 ],
                 if (sortBy != 'Yearly') ...[
                   _buildDropdown(
@@ -1016,7 +1144,7 @@ class TrackerPageState extends State<TrackerPage> {
                       setState(() => filterMonth = value!);
                     },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                 ],
                 _buildDropdown(
                   '$filterYear',
@@ -1033,32 +1161,32 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  Widget _buildDropdown(
+  Widget _buildSortByDropdown(
       String value,
       List<String> items,
       Function(String?)? onChanged,
       ) {
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF6E3D2C),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF6B4423),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Center(
         child: DropdownButton<String>(
           value: value,
-          dropdownColor: const Color(0xFF6E3D2C),
+          dropdownColor: const Color(0xFF6B4423),
           underline: const SizedBox(),
           isDense: true,
           icon: const Icon(
             Icons.arrow_drop_down,
             color: Colors.white,
-            size: 20,
+            size: 16,
           ),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
           alignment: Alignment.center,
@@ -1074,4 +1202,46 @@ class TrackerPageState extends State<TrackerPage> {
       ),
     );
   }
-}
+
+  Widget _buildDropdown(
+      String value,
+      List<String> items,
+      Function(String?)? onChanged,
+      ) {
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Center(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: Colors.white,
+          underline: const SizedBox(),
+          isDense: true,
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            color: Color(0xFF874C2B),
+            size: 16,
+          ),
+          style: const TextStyle(
+            color: Color(0xFF874C2B),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          alignment: Alignment.center,
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              alignment: Alignment.center,
+              child: Text(item),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+  }
