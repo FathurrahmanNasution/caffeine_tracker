@@ -1,6 +1,6 @@
 import 'package:caffeine_tracker/screens/account_authorization_page.dart';
 import 'package:caffeine_tracker/screens/addotherdrink_page.dart';
-import 'package:caffeine_tracker/screens/admin_add_drink_page.dart';
+import 'package:caffeine_tracker/screens/admin_manage_drinks_page.dart';
 import 'package:caffeine_tracker/screens/admin_dashboard_page.dart';
 import 'package:caffeine_tracker/screens/change_password_page.dart';
 import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
@@ -61,7 +61,7 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const MainScaffold(initialIndex: 3),
         '/drinkinformation': (context) => const DrinkinformationPage(),
         '/addotherdrink': (context) => const AddotherdrinkPage(),
-        '/admin': (context) => const AdminAddDrinkPage(),
+        '/admin_managedrinks': (context) => const ManageDrinksPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/email-verification') {

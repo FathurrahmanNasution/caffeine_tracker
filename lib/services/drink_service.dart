@@ -143,20 +143,4 @@ class DrinkService {
       });
     }
   }
-
-  // Add new drink (admin only)
-  Future<void> addDrink(DrinkModel drink) async {
-    await _firestore.collection(_drinksCollection).add(drink.toMap());
-  }
-
-  // Update drink (admin only)
-  Future<void> updateDrink(String id, Map<String, dynamic> data) async {
-    await _firestore.collection(_drinksCollection).doc(id).update(data);
-  }
-
-  // Delete drink (admin only)
-  Future<void> deleteDrink(String id) async {
-    await _firestore.collection(_drinksCollection).doc(id).delete();
-  }
-
 }

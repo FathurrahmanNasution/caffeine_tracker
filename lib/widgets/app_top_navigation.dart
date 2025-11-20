@@ -83,7 +83,6 @@ class AppTopNavigation extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Back button or empty space
           SizedBox(
             width: 40,
             child: showBackButton
