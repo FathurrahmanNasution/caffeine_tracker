@@ -2,9 +2,7 @@ import 'package:caffeine_tracker/widgets/consumption_form.dart';
 import 'package:flutter/material.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
-import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_service.dart';
 import '../widgets/app_top_navigation.dart';
 
 class AddotherdrinkPage extends StatefulWidget {
@@ -15,10 +13,7 @@ class AddotherdrinkPage extends StatefulWidget {
 }
 
 class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
-  final _auth = AuthService();
   final ConsumptionService _consumptionService = ConsumptionService();
-  UserModel? _userProfile;
-  bool _loading = true;
 
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
 
@@ -34,37 +29,12 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
     caffeineContent = (50 / 200) * servingSize;
 
     _servingController = TextEditingController(text: "$servingSize");
     _caffeineController =
         TextEditingController(text: caffeineContent.toStringAsFixed(1));
     _drinkNameController = TextEditingController();
-  }
-
-  Future<void> _loadUserProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/signin');
-      }
-      return;
-    }
-
-    try {
-      final doc = await _auth.getProfileDoc(user.uid);
-      if (mounted) {
-        setState(() {
-          _userProfile = UserModel.fromMap(user.uid, doc.data());
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
   }
 
   @override
@@ -180,27 +150,16 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final height = size.height;
 
-    if (_loading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5EBE0),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          AppTopNavigation(
-            userProfile: _userProfile,
-            showBackButton: true,
-          ),
+          const AppTopNavigation(),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -261,7 +220,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
               height: height * 0.15,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-              const Icon(Icons.local_cafe, size: 80),
+                  const Icon(Icons.local_cafe, size: 80),
             ),
           ),
         ),

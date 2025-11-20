@@ -5,10 +5,7 @@ import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_service.dart';
 import '../widgets/app_top_navigation.dart';
-import 'package:caffeine_tracker/model/user_model.dart';
-
 
 class DrinkinformationPage extends StatefulWidget {
   const DrinkinformationPage({super.key});
@@ -18,11 +15,7 @@ class DrinkinformationPage extends StatefulWidget {
 }
 
 class _DrinkinformationPageState extends State<DrinkinformationPage> {
-  final _auth = AuthService();
   final ConsumptionService _consumptionService = ConsumptionService();
-  UserModel? _userProfile;
-  bool _loading = true;
-
   final DrinkService _drinkService = DrinkService();
 
   DrinkModel? drink;
@@ -39,33 +32,8 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
     _servingController = TextEditingController();
     _caffeineController = TextEditingController();
-  }
-
-  Future<void> _loadUserProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/signin');
-      }
-      return;
-    }
-
-    try {
-      final doc = await _auth.getProfileDoc(user.uid);
-      if (mounted) {
-        setState(() {
-          _userProfile = UserModel.fromMap(user.uid, doc.data());
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
   }
 
   @override
@@ -211,10 +179,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          AppTopNavigation(
-            userProfile: _userProfile,
-            showBackButton: true,
-          ),
+          const AppTopNavigation(),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -229,7 +194,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       ),
     );
   }
-
 
   Widget _buildHeader(double height) {
     return Stack(
@@ -273,9 +237,12 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
           child: Center(
             child: drink != null
                 ? (drink!.imageUrl.startsWith('http')
-                ? Image.network(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain)
-                : Image.asset(drink!.imageUrl, height: height * 0.15, fit: BoxFit.contain))
-                : Image.asset("assets/images/coffee.png", height: height * 0.15, fit: BoxFit.contain),
+                    ? Image.network(drink!.imageUrl,
+                        height: height * 0.15, fit: BoxFit.contain)
+                    : Image.asset(drink!.imageUrl,
+                        height: height * 0.15, fit: BoxFit.contain))
+                : Image.asset("assets/images/coffee.png",
+                    height: height * 0.15, fit: BoxFit.contain),
           ),
         ),
       ],
@@ -343,7 +310,9 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
             }
           },
           icon: Icon(
-            drink?.isFavorite ?? false ? Icons.favorite : Icons.favorite_border,
+            drink?.isFavorite ?? false
+                ? Icons.favorite
+                : Icons.favorite_border,
             color: Colors.red,
             size: 32,
           ),

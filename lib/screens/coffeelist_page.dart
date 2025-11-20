@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
-import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
-import 'package:caffeine_tracker/services/auth_service.dart';
 import 'package:caffeine_tracker/widgets/drink_card.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/utils/responsive.dart';
@@ -16,44 +14,11 @@ class CoffeeListPage extends StatefulWidget {
 }
 
 class _CoffeeListPageState extends State<CoffeeListPage> {
-  final _auth = AuthService();
   final DrinkService _drinkService = DrinkService();
-  UserModel? _userProfile;
-  bool _loading = true;
 
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserProfile();
-  }
-
-  Future<void> _loadUserProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/signin');
-      }
-      return;
-    }
-
-    try {
-      final doc = await _auth.getProfileDoc(user.uid);
-      if (mounted) {
-        setState(() {
-          _userProfile = UserModel.fromMap(user.uid, doc.data());
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -65,20 +30,11 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
   Widget build(BuildContext context) {
     final r = context.responsive;
 
-    if (_loading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5EBE0),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          AppTopNavigation(
-            userProfile: _userProfile,
-          ),
+          const AppTopNavigation(),
           Expanded(
             child: Center(
               child: Container(

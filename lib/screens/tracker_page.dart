@@ -1,12 +1,11 @@
-import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
-import 'package:caffeine_tracker/services/auth_service.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class TrackerPage extends StatefulWidget {
   const TrackerPage({super.key});
@@ -16,28 +15,23 @@ class TrackerPage extends StatefulWidget {
 }
 
 class TrackerPageState extends State<TrackerPage> {
-  final _auth = AuthService();
   final _firestore = FirebaseFirestore.instance;
-  UserModel? _userProfile;
-  bool _loading = true;
   List<ConsumptionLog> _consumptions = [];
+
+  String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
 
   DateTime selectedDate = DateTime.now();
   String sortBy = 'Weekly';
   String filterWeek = 'First Week';
   String filterMonth = 'November';
-  int filterYear = DateTime
-      .now()
-      .year;
+  int filterYear = DateTime.now().year;
 
   @override
   void initState() {
     super.initState();
 
     filterMonth = DateFormat('MMMM').format(DateTime.now());
-    filterYear = DateTime
-        .now()
-        .year;
+    filterYear = DateTime.now().year;
 
     final now = DateTime.now();
     final dayOfMonth = now.day;
@@ -53,7 +47,6 @@ class TrackerPageState extends State<TrackerPage> {
       filterWeek = 'Fifth Week';
     }
 
-    _loadUserProfile();
     _loadConsumptions();
   }
 
@@ -61,38 +54,13 @@ class TrackerPageState extends State<TrackerPage> {
     _loadConsumptions();
   }
 
-  Future<void> _loadUserProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/signin');
-      }
-      return;
-    }
-
-    try {
-      final doc = await _auth.getProfileDoc(user.uid);
-      if (mounted) {
-        setState(() {
-          _userProfile = UserModel.fromMap(user.uid, doc.data());
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
   Future<void> _loadConsumptions() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    if (currentUserId.isEmpty) return;
 
     try {
       final snapshot = await _firestore
           .collection('consumptions')
-          .where('userId', isEqualTo: user.uid)
+          .where('userId', isEqualTo: currentUserId)
           .orderBy('consumedAt', descending: true)
           .get();
 
@@ -815,18 +783,11 @@ class TrackerPageState extends State<TrackerPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5EBE0),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          AppTopNavigation(userProfile: _userProfile),
+          const AppTopNavigation(),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -860,10 +821,7 @@ class TrackerPageState extends State<TrackerPage> {
                       child: Column(
                         children: [
                           Text(
-                            'Oh no! ${sortBy == 'Weekly' ? 'Weekly' : sortBy ==
-                                'Monthly'
-                                ? 'Monthly'
-                                : 'Yearly'} Intake Unavailable',
+                            'Oh no! ${sortBy == 'Weekly' ? 'Weekly' : sortBy == 'Monthly' ? 'Monthly' : 'Yearly'} Intake Unavailable',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 20,
@@ -886,11 +844,7 @@ class TrackerPageState extends State<TrackerPage> {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            'It looks like you haven\'t logged enough drinks this ${sortBy
-                                .toLowerCase() == 'weekly' ? 'week' : sortBy
-                                .toLowerCase() == 'monthly'
-                                ? 'month'
-                                : 'year'}. Add a few more and we\'ll calculate your total!',
+                            'It looks like you haven\'t logged enough drinks this ${sortBy.toLowerCase() == 'weekly' ? 'week' : sortBy.toLowerCase() == 'monthly' ? 'month' : 'year'}. Add a few more and we\'ll calculate your total!',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 15,
@@ -1244,4 +1198,4 @@ class TrackerPageState extends State<TrackerPage> {
       ),
     );
   }
-  }
+}

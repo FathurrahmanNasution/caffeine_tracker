@@ -5,7 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _fire = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   User? get currentUser => _auth.currentUser;
@@ -36,11 +36,11 @@ class AuthService {
         return null;
       }
 
-      final unameRef = _fire.collection('usernames').doc(uname);
-      final userRef = _fire.collection('users').doc(user.uid);
+      final unameRef = _firestore.collection('usernames').doc(uname);
+      final userRef = _firestore.collection('users').doc(user.uid);
 
       try {
-        await _fire.runTransaction((tx) async {
+        await _firestore.runTransaction((tx) async {
           final unameSnap = await tx.get(unameRef);
           if (unameSnap.exists) {
             throw Exception('username-taken');
@@ -99,7 +99,7 @@ class AuthService {
   // Check if user is admin
   Future<bool> isAdmin(String uid) async {
     try {
-      final userDoc = await _fire.collection('users').doc(uid).get();
+      final userDoc = await _firestore.collection('users').doc(uid).get();
       return userDoc.data()?['isAdmin'] as bool? ?? false;
     } catch (e) {
       return false;
@@ -110,7 +110,7 @@ class AuthService {
   Future<UserModel?> signInAsAdmin(String username, String password) async {
     final uname = _normalize(username);
     
-    final unameRef = _fire.collection('usernames').doc(uname);
+    final unameRef = _firestore.collection('usernames').doc(uname);
     final unameDoc = await unameRef.get();
     
     if (!unameDoc.exists) {
@@ -132,7 +132,7 @@ class AuthService {
     }
 
     // Check if user is admin
-    final userDoc = await _fire.collection('users').doc(user.uid).get();
+    final userDoc = await _firestore.collection('users').doc(user.uid).get();
     final userData = userDoc.data();
     final isAdminUser = userData?['isAdmin'] as bool? ?? false;
 
@@ -149,7 +149,7 @@ class AuthService {
   Future<UserModel?> signInWithUsername(String username, String password) async {
     final uname = _normalize(username);
     
-    final unameRef = _fire.collection('usernames').doc(uname);
+    final unameRef = _firestore.collection('usernames').doc(uname);
     final unameDoc = await unameRef.get();
     
     if (!unameDoc.exists) {
@@ -170,7 +170,7 @@ class AuthService {
       return null;
     }
 
-    final userDoc = await _fire.collection('users').doc(user.uid).get();
+    final userDoc = await _firestore.collection('users').doc(user.uid).get();
     final userData = userDoc.data();
     final isAdminUser = userData?['isAdmin'] as bool? ?? false;
 
@@ -185,7 +185,7 @@ class AuthService {
       throw Exception('Please verify your email before signing in. Check your inbox.');
     }
     
-    await _fire.collection('users').doc(user.uid).update({
+    await _firestore.collection('users').doc(user.uid).update({
       'emailVerified': true,
     });
     
@@ -217,11 +217,11 @@ class AuthService {
         return null;
       }
 
-      final unameRef = _fire.collection('usernames').doc(uname);
-      final userRef = _fire.collection('users').doc(user.uid);
+      final unameRef = _firestore.collection('usernames').doc(uname);
+      final userRef = _firestore.collection('users').doc(user.uid);
 
       try {
-        await _fire.runTransaction((tx) async {
+        await _firestore.runTransaction((tx) async {
           final unameSnap = await tx.get(unameRef);
           if (unameSnap.exists) {
             throw Exception('username-taken');
@@ -306,7 +306,7 @@ class AuthService {
     
     if (updatedUser != null && updatedUser.emailVerified) {
       try {
-        await _fire.collection('users').doc(updatedUser.uid).update({
+        await _firestore.collection('users').doc(updatedUser.uid).update({
           'emailVerified': true,
         });
       } catch (e) {
@@ -338,7 +338,7 @@ class AuthService {
       
       if (user == null) return null;
 
-      final userRef = _fire.collection('users').doc(user.uid);
+      final userRef = _firestore.collection('users').doc(user.uid);
       final userDoc = await userRef.get();
 
       if (!userDoc.exists) {
@@ -360,7 +360,7 @@ class AuthService {
           'emailVerified': true,
         });
 
-        await _fire.collection('usernames').doc(generatedUsername).set({
+        await _firestore.collection('usernames').doc(generatedUsername).set({
           'uid': user.uid,
           'email': email,
           'createdAt': FieldValue.serverTimestamp(),
@@ -402,7 +402,7 @@ class AuthService {
     int counter = 1;
     
     while (true) {
-      final unameDoc = await _fire.collection('usernames').doc(username).get();
+      final unameDoc = await _firestore.collection('usernames').doc(username).get();
       if (!unameDoc.exists) {
         return username;
       }
@@ -424,11 +424,24 @@ class AuthService {
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getProfileDoc(String uid) {
-    return _fire.collection('users').doc(uid).get();
+    return _firestore.collection('users').doc(uid).get();
+  }
+
+  Stream<UserModel?> getUserProfileStream(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) {
+          if (doc.exists && doc.data() != null) {
+            return UserModel.fromMap(uid, doc.data()!);
+          }
+          return null;
+        });
   }
 
   Future<void> updateProfile(String uid, Map<String, dynamic> data) async {
-    await _fire.collection('users').doc(uid).set(data, SetOptions(merge: true));
+    await _firestore.collection('users').doc(uid).set(data, SetOptions(merge: true));
     final user = _auth.currentUser;
     if (user != null && data.containsKey('displayName')) {
       await user.updateDisplayName(data['displayName'] as String?);

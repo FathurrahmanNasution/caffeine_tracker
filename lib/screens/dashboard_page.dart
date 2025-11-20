@@ -1,11 +1,9 @@
-import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Drink {
@@ -32,16 +30,13 @@ class DashboardPage extends StatefulWidget {
 }
 
 class DashboardPageState extends State<DashboardPage> {
-  final _auth = AuthService();
   final _consumptionService = ConsumptionService();
-  UserModel? _userProfile;
-  bool _loading = true;
 
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
+
   Map<String, dynamic> _getCurrentWeekRange() {
     final now = DateTime.now();
     final dayOfMonth = now.day;
-
 
     final weekStart = ((dayOfMonth - 1) ~/ 7) * 7 + 1;
     final weekEnd = weekStart + 6;
@@ -65,11 +60,23 @@ class DashboardPageState extends State<DashboardPage> {
   }
 
   Map<int, double> weeklyData = {
-    0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0,
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
   };
 
   Map<int, List<ConsumptionLog>> weeklyDrinks = {
-    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [],
+    0: [],
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
   };
 
   List<String> _getWeekLabels() {
@@ -111,38 +118,14 @@ class DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
     _loadWeeklyData();
   }
 
-  Future<void> _loadUserProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/signin');
-      }
-      return;
-    }
-
-    try {
-      final doc = await _auth.getProfileDoc(user.uid);
-      if (mounted) {
-        setState(() {
-          _userProfile = UserModel.fromMap(user.uid, doc.data());
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
   void refreshData() {
     _loadWeeklyData();
   }
 
-   void _loadWeeklyData() {
+  void _loadWeeklyData() {
     final now = DateTime.now();
     final weekRange = _getCurrentWeekRange();
     final startDay = weekRange['start'] as int;
@@ -188,9 +171,9 @@ class DashboardPageState extends State<DashboardPage> {
 
     if (drinks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('No drinks at that day'),
-          duration: const Duration(seconds: 1),
+          duration: Duration(seconds: 1),
         ),
       );
       return;
@@ -199,7 +182,8 @@ class DashboardPageState extends State<DashboardPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        double totalCaffeine = drinks.fold(0, (sum, d) => sum + d.caffeineContent);
+        double totalCaffeine =
+            drinks.fold(0, (sum, d) => sum + d.caffeineContent);
 
         return AlertDialog(
           backgroundColor: const Color(0xFFD6CCC2),
@@ -214,7 +198,8 @@ class DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.brown[800],
                   borderRadius: BorderRadius.circular(8),
@@ -302,7 +287,7 @@ class DashboardPageState extends State<DashboardPage> {
       drinks.removeAt(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Drink deleted successfully'))
+      const SnackBar(content: Text('Drink deleted successfully')),
     );
   }
 
@@ -333,22 +318,11 @@ class DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5EBE0),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    final displayName = _userProfile?.displayName ?? _userProfile?.username ?? 'User';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          AppTopNavigation(
-            userProfile: _userProfile,
-          ),
+          const AppTopNavigation(),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(28),
@@ -360,10 +334,10 @@ class DashboardPageState extends State<DashboardPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
+                      const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Hi there,',
                             style: TextStyle(
                               fontSize: 19,
@@ -372,8 +346,8 @@ class DashboardPageState extends State<DashboardPage> {
                             ),
                           ),
                           Text(
-                            displayName,
-                            style: const TextStyle(
+                            'User',
+                            style: TextStyle(
                               fontSize: 19,
                               color: Color(0xff42261d),
                               fontWeight: FontWeight.w500,
@@ -382,10 +356,16 @@ class DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
-                          border: Border.all(color: const Color(0xff42261d), width: 2),
+                          border: Border.all(
+                            color: const Color(0xff42261d),
+                            width: 2,
+                          ),
                           borderRadius: BorderRadius.circular(50),
                         ),
                         child: const Text(
@@ -448,9 +428,12 @@ class DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 10),
                   Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 42),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 42,
+                      ),
                       decoration: BoxDecoration(
-                        color: Color(0xFF52796F),
+                        color: const Color(0xFF52796F),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: RichText(
@@ -487,7 +470,8 @@ class DashboardPageState extends State<DashboardPage> {
                       size: drink.size,
                       time: drink.time,
                       image: drink.image,
-                      onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/drinkinformation'),
                       onDelete: () => _showDeleteDialog(index),
                     );
                   }),

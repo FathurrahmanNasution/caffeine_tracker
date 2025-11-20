@@ -13,11 +13,23 @@ import 'package:caffeine_tracker/screens/splash_screen.dart';
 import 'package:caffeine_tracker/screens/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://hldxwjvooyejwhusygnh.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsZHh3anZvb3llandodXN5Z25oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3ODM1NTYsImV4cCI6MjA3NTM1OTU1Nn0.BGp9SG1ZkaBZYMWvnYsXIywhItoNqieqF49XQMJ15wc',
+  );
+
   runApp(const MyApp());
 }
 
@@ -52,15 +64,12 @@ class MyApp extends StatelessWidget {
         '/admin': (context) => const AdminAddDrinkPage(),
       },
       onGenerateRoute: (settings) {
-        // Handle email verification route with arguments
         if (settings.name == '/email-verification') {
           final email = settings.arguments as String;
           return MaterialPageRoute(
             builder: (context) => EmailVerificationPage(email: email),
           );
         }
-
-        // Return null to let the routes map handle it
         return null;
       },
     );
