@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:caffeine_tracker/services/admin_drink_service.dart';
 
 class AdminAddDrinkPage extends StatefulWidget {
-  const AdminAddDrinkPage({super.key});
+  final DrinkModel? drinkToEdit;
+
+  const AdminAddDrinkPage({super.key, this.drinkToEdit});
 
   @override
   State<AdminAddDrinkPage> createState() => _AdminAddDrinkPageState();
@@ -12,33 +17,107 @@ class AdminAddDrinkPage extends StatefulWidget {
 class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
   final _formKey = GlobalKey<FormState>();
   final _adminDrinkService = AdminDrinkService();
+  final _imagePicker = ImagePicker();
 
   final _nameController = TextEditingController();
-  final _imageUrlController = TextEditingController();
   final _caffeineController = TextEditingController();
   final _volumeController = TextEditingController();
   final _infoController = TextEditingController();
-  bool _isFavorite = false;
+
+  File? _selectedImage;
+  bool _isUploading = false;
+  bool get _isEditMode => widget.drinkToEdit != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditMode) {
+      _nameController.text = widget.drinkToEdit!.name;
+      _caffeineController.text = widget.drinkToEdit!.caffeineinMg.toString();
+      _volumeController.text = widget.drinkToEdit!.standardVolume.toString();
+      _infoController.text = widget.drinkToEdit!.information;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> _uploadImage() async {
+    if (_selectedImage == null) return null;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${_nameController.text.replaceAll(' ', '_').toLowerCase()}.png';
+      final ref = FirebaseStorage.instance.ref().child('drink_images/$fileName');
+
+      await ref.putFile(_selectedImage!);
+      final downloadUrl = await ref.getDownloadURL();
+
+      setState(() => _isUploading = false);
+      return downloadUrl;
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+      return null;
+    }
+  }
 
   void _saveDrink() async {
     if (_formKey.currentState!.validate()) {
-      final drink = DrinkModel(
-        id: '',
-        name: _nameController.text,
-        imageUrl: _imageUrlController.text,
-        caffeineinMg: double.parse(_caffeineController.text),
-        standardVolume: int.parse(_volumeController.text),
-        information: _infoController.text,
-        isFavorite: _isFavorite,
-      );
+      if (!_isEditMode && _selectedImage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select an image!'), backgroundColor: Colors.red),
+        );
+        return;
+      }
 
-      await _adminDrinkService.addDrink(drink);
+      String? imageUrl;
+
+      if (_selectedImage != null) {
+        imageUrl = await _uploadImage();
+        if (imageUrl == null) return;
+      } else if (_isEditMode) {
+        imageUrl = widget.drinkToEdit!.imageUrl;
+      }
+
+      final drinkData = {
+        'name': _nameController.text,
+        'imageUrl': imageUrl!,
+        'caffeineinMg': double.parse(_caffeineController.text),
+        'standardVolume': int.parse(_volumeController.text),
+        'information': _infoController.text,
+      };
+
+      if (_isEditMode) {
+        await _adminDrinkService.updateDrink(widget.drinkToEdit!.id, drinkData);
+      } else {
+        final drink = DrinkModel(
+          id: '',
+          name: drinkData['name'] as String,
+          imageUrl: drinkData['imageUrl'] as String,
+          caffeineinMg: drinkData['caffeineinMg'] as double,
+          standardVolume: drinkData['standardVolume'] as int,
+          information: drinkData['information'] as String,
+        );
+        await _adminDrinkService.addDrink(drink);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Drink added successfully!'),
-            backgroundColor: Color(0xFF4E8D7C),
+          SnackBar(
+            content: Text(_isEditMode ? 'Drink updated successfully!' : 'Drink added successfully!'),
+            backgroundColor: const Color(0xFF6E3D2C),
           ),
         );
         Navigator.pop(context);
@@ -46,17 +125,40 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
     }
   }
 
+  // Widget helper untuk reduce repetition
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0xFF6E3D2C)),
+        filled: true,
+        fillColor: const Color(0xB3FFFFFF),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFA67C52)),
+        ),
+      ),
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      validator: validator,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5EBE0),
       appBar: AppBar(
-        title: const Text(
-          'Add New Drink',
-          style: TextStyle(
-            color: Color(0xFF42261D),
-            fontWeight: FontWeight.bold,
-          ),
+        title: Text(
+          _isEditMode ? 'Edit Drink' : 'Add New Drink',
+          style: const TextStyle(color: Color(0xFF42261D), fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFD5BBA2),
         leading: IconButton(
@@ -69,120 +171,82 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
+            // Image Picker
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: const Color(0xB3FFFFFF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFA67C52)),
+                ),
+                child: _selectedImage != null
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                )
+                    : _isEditMode && widget.drinkToEdit!.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: widget.drinkToEdit!.imageUrl.startsWith('http')
+                      ? Image.network(widget.drinkToEdit!.imageUrl, fit: BoxFit.cover)
+                      : Image.asset(widget.drinkToEdit!.imageUrl, fit: BoxFit.cover),
+                )
+                    : const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate, size: 50, color: Color(0xFF6E3D2C)),
+                    SizedBox(height: 8),
+                    Text('Tap to select image', style: TextStyle(color: Color(0xFF6E3D2C))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _buildTextField(
               controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                labelStyle: const TextStyle(color: Color(0xFF6E3D2C)),
-                filled: true,
-                fillColor: const Color(0xFFD6CCC2),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFA67C52)),
-                ),
-              ),
+              label: 'Name',
               validator: (v) => v!.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _imageUrlController,
-              decoration: InputDecoration(
-                labelText: 'Image URL',
-                hintText: 'assets/images/coffee.png or https://...',
-                labelStyle: const TextStyle(color: Color(0xFF6E3D2C)),
-                filled: true,
-                fillColor: const Color(0xFFD6CCC2),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFA67C52)),
-                ),
-              ),
-              validator: (v) => v!.isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
+
+            _buildTextField(
               controller: _caffeineController,
-              decoration: InputDecoration(
-                labelText: 'Caffeine in mg',
-                labelStyle: const TextStyle(color: Color(0xFF6E3D2C)),
-                filled: true,
-                fillColor: const Color(0xFFD6CCC2),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFA67C52)),
-                ),
-              ),
+              label: 'Caffeine in mg',
               keyboardType: TextInputType.number,
               validator: (v) => v!.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
+
+            _buildTextField(
               controller: _volumeController,
-              decoration: InputDecoration(
-                labelText: 'Standard Volume (mL)',
-                labelStyle: const TextStyle(color: Color(0xFF6E3D2C)),
-                filled: true,
-                fillColor: const Color(0xFFD6CCC2),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFA67C52)),
-                ),
-              ),
+              label: 'Standard Volume (mL)',
               keyboardType: TextInputType.number,
               validator: (v) => v!.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
+
+            _buildTextField(
               controller: _infoController,
-              decoration: InputDecoration(
-                labelText: 'Information',
-                labelStyle: const TextStyle(color: Color(0xFF6E3D2C)),
-                filled: true,
-                fillColor: const Color(0xFFD6CCC2),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFA67C52)),
-                ),
-              ),
+              label: 'Information',
               maxLines: 3,
             ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFD6CCC2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFA67C52)),
-              ),
-              child: SwitchListTile(
-                title: const Text(
-                  'Is Favorite',
-                  style: TextStyle(
-                    color: Color(0xFF42261D),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                value: _isFavorite,
-                activeColor: const Color(0xFF4E8D7C),
-                onChanged: (v) => setState(() => _isFavorite = v),
-              ),
-            ),
             const SizedBox(height: 30),
+
             ElevatedButton(
-              onPressed: _saveDrink,
+              onPressed: _isUploading ? null : _saveDrink,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4E8D7C),
+                backgroundColor: const Color(0xFF6E3D2C),
                 padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
               ),
-              child: const Text(
-                'Save Drink',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: _isUploading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(
+                _isEditMode ? 'Update Drink' : 'Save Drink',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -194,7 +258,6 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _imageUrlController.dispose();
     _caffeineController.dispose();
     _volumeController.dispose();
     _infoController.dispose();

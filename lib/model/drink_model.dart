@@ -5,7 +5,7 @@ class DrinkModel {
   final double caffeineinMg;
   final int standardVolume;
   final String information;
-  bool isFavorite; // Jadi non-final, untuk update UI
+  bool isFavorite;
 
   DrinkModel({
     required this.id,
