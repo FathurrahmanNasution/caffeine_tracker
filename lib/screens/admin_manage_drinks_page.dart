@@ -20,13 +20,6 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD5BBA2),
         elevation: 0,
-        title: const Text(
-          'Manage Drinks',
-          style: TextStyle(
-            color: Color(0xFF42261D),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF42261D)),
           onPressed: () => Navigator.pop(context),
@@ -79,10 +72,25 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: drinks.length,
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+            itemCount: drinks.length + 1,
             itemBuilder: (context, index) {
-              final drink = drinks[index];
+              if (index == 0) {
+                return const Padding(
+                  padding: EdgeInsets.fromLTRB(12, 10, 12, 25),
+                  child: Text(
+                    'Manage Drinks',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                      height: 1.2,
+                      fontFamily: 'Oswald',
+                    ),
+                  ),
+                );
+              }
+              final drink = drinks[index - 1];
               return _buildDrinkCard(drink);
             },
           );
@@ -104,6 +112,7 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
       ),
@@ -114,7 +123,7 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFD6CCC2),
+        color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFA67C52), width: 1),
         boxShadow: [
@@ -126,46 +135,37 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Image
             Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFA67C52), width: 2),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: drink.imageUrl.startsWith('http')
-                    ? Image.network(
-                  drink.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.local_drink,
-                      size: 40,
-                      color: Color(0xFF6E3D2C),
-                    );
-                  },
-                )
-                    : Image.asset(
-                  drink.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.local_drink,
-                      size: 40,
-                      color: Color(0xFF6E3D2C),
-                    );
-                  },
-                ),
+              width: 90,
+              height: 90,
+              child: drink.imageUrl.startsWith('http')
+                  ? Image.network(
+                drink.imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.local_drink,
+                    size: 40,
+                    color: Color(0xFF6E3D2C),
+                  );
+                },
+              )
+                  : Image.asset(
+                drink.imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.local_drink,
+                    size: 40,
+                    color: Color(0xFF6E3D2C),
+                  );
+                },
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             // Info
             Expanded(
               child: Column(
@@ -180,13 +180,14 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
                       fontFamily: 'Poppins',
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     '${drink.caffeineinMg}mg - ${drink.standardVolume}mL',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       color: Color(0xFF6E3D2C),
                       fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (drink.information.isNotEmpty) ...[
@@ -196,7 +197,7 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 15,
                         color: Colors.grey[700],
                         fontFamily: 'Poppins',
                       ),
@@ -209,13 +210,18 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
             Column(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Color(0xFF4E8D7C)),
+                  icon: const Icon(Icons.edit, color: Color(0xFF4E8D7C), size: 27),
                   onPressed: () {
-                    _showEditDialog(drink);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AdminAddDrinkPage(drinkToEdit: drink),
+                      ),
+                    );
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(Icons.delete, color: Color(0xFFFF5151), size: 27),
                   onPressed: () {
                     _showDeleteDialog(drink);
                   },
@@ -225,120 +231,6 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showEditDialog(DrinkModel drink) {
-    final nameController = TextEditingController(text: drink.name);
-    final imageUrlController = TextEditingController(text: drink.imageUrl);
-    final caffeineController = TextEditingController(text: drink.caffeineinMg.toString());
-    final volumeController = TextEditingController(text: drink.standardVolume.toString());
-    final infoController = TextEditingController(text: drink.information);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFFF5EBE0),
-          title: const Text(
-            'Edit Drink',
-            style: TextStyle(
-              color: Color(0xFF42261D),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    labelStyle: TextStyle(color: Color(0xFF6E3D2C)),
-                  ),
-                ),
-                TextField(
-                  controller: imageUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'Image URL',
-                    labelStyle: TextStyle(color: Color(0xFF6E3D2C)),
-                  ),
-                ),
-                TextField(
-                  controller: caffeineController,
-                  decoration: const InputDecoration(
-                    labelText: 'Caffeine (mg)',
-                    labelStyle: TextStyle(color: Color(0xFF6E3D2C)),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: volumeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Volume (mL)',
-                    labelStyle: TextStyle(color: Color(0xFF6E3D2C)),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: infoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Information',
-                    labelStyle: TextStyle(color: Color(0xFF6E3D2C)),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF6E3D2C)),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await _adminDrinkService.updateDrink(drink.id, {
-                    'name': nameController.text,
-                    'imageUrl': imageUrlController.text,
-                    'caffeineinMg': double.parse(caffeineController.text),
-                    'standardVolume': int.parse(volumeController.text),
-                    'information': infoController.text,
-                  });
-
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Drink updated successfully!'),
-                        backgroundColor: Color(0xFF4E8D7C),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text(
-                'Save',
-                style: TextStyle(color: Color(0xFF4E8D7C), fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -369,21 +261,25 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
             ),
             TextButton(
               onPressed: () async {
+                // Simpan context dan navigator sebelum async
+                final navigator = Navigator.of(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+
                 try {
                   await _adminDrinkService.deleteDrink(drink.id);
 
                   if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    navigator.pop(); // Tutup dialog
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('Drink deleted successfully!'),
-                        backgroundColor: Color(0xFF4E8D7C),
+                        backgroundColor: Color(0xFF6E3D2C),
                       ),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    scaffoldMessenger.showSnackBar(
                       SnackBar(
                         content: Text('Error: $e'),
                         backgroundColor: Colors.red,
