@@ -17,7 +17,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
 
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
 
-  int servingSize = 240;
+  int servingSize = 0;
   double caffeineContent = 0;
   bool isCaffeineEdited = false;
   DateTime selectedDateTime = DateTime.now();
@@ -29,7 +29,6 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
   @override
   void initState() {
     super.initState();
-    caffeineContent = (50 / 200) * servingSize;
 
     _servingController = TextEditingController(text: "$servingSize");
     _caffeineController =
@@ -51,7 +50,6 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
       _servingController.text = servingSize.toString();
 
       if (!isCaffeineEdited) {
-        caffeineContent = (50 / 200) * servingSize;
         _caffeineController.text = caffeineContent.toStringAsFixed(1);
       }
     });
@@ -64,7 +62,6 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
         _servingController.text = servingSize.toString();
 
         if (!isCaffeineEdited) {
-          caffeineContent = (50 / 200) * servingSize;
           _caffeineController.text = caffeineContent.toStringAsFixed(1);
         }
       }
@@ -77,7 +74,6 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
       setState(() {
         servingSize = number;
         if (!isCaffeineEdited) {
-          caffeineContent = (50 / 200) * servingSize;
           _caffeineController.text = caffeineContent.toStringAsFixed(1);
         }
       });
@@ -125,7 +121,40 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
   Future<void> _saveDrink() async {
     if (_drinkNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter drink name')),
+        const SnackBar(
+            content: Text('Please enter drink name'),
+            backgroundColor: Color(0xFFFF5151),
+        ),
+      );
+      return;
+    }
+
+    if (servingSize <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Serving size must be greater than 0!'),
+          backgroundColor: Color(0xFFFF5151),
+        ),
+      );
+      return;
+    }
+
+    if (caffeineContent <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Caffeine content must be greater than 0!'),
+          backgroundColor: Color(0xFFFF5151),
+        ),
+      );
+      return;
+    }
+
+    if (selectedDateTime.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Time cannot be in the future!'),
+          backgroundColor: Color(0xFFFF5151),
+        ),
       );
       return;
     }
