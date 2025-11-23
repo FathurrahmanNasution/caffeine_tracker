@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:caffeine_tracker/services/admin_drink_service.dart';
+import 'package:caffeine_tracker/services/supabase_storage_service.dart';
 
 class AdminAddDrinkPage extends StatefulWidget {
   final DrinkModel? drinkToEdit;
@@ -17,6 +17,7 @@ class AdminAddDrinkPage extends StatefulWidget {
 class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
   final _formKey = GlobalKey<FormState>();
   final _adminDrinkService = AdminDrinkService();
+  final _storageService = SupabaseStorageService();
   final _imagePicker = ImagePicker();
 
   final _nameController = TextEditingController();
@@ -40,36 +41,16 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
-    }
-  }
-
-  Future<String?> _uploadImage() async {
-    if (_selectedImage == null) return null;
-
-    setState(() => _isUploading = true);
-
-    try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${_nameController.text.replaceAll(' ', '_').toLowerCase()}.png';
-      final ref = FirebaseStorage.instance.ref().child('drink_images/$fileName');
-
-      await ref.putFile(_selectedImage!);
-      final downloadUrl = await ref.getDownloadURL();
-
-      setState(() => _isUploading = false);
-      return downloadUrl;
-    } catch (e) {
-      setState(() => _isUploading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
-        );
-      }
-      return null;
     }
   }
 
@@ -82,50 +63,74 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
         return;
       }
 
-      String? imageUrl;
+      setState(() => _isUploading = true);
 
-      if (_selectedImage != null) {
-        imageUrl = await _uploadImage();
-        if (imageUrl == null) return;
-      } else if (_isEditMode) {
-        imageUrl = widget.drinkToEdit!.imageUrl;
-      }
+      try {
+        String? imageUrl;
 
-      final drinkData = {
-        'name': _nameController.text,
-        'imageUrl': imageUrl!,
-        'caffeineinMg': double.parse(_caffeineController.text),
-        'standardVolume': int.parse(_volumeController.text),
-        'information': _infoController.text,
-      };
+        if (_selectedImage != null) {
+          imageUrl = await _storageService.uploadDrinkImage(
+            _selectedImage!,
+            _nameController.text,
+          );
 
-      if (_isEditMode) {
-        await _adminDrinkService.updateDrink(widget.drinkToEdit!.id, drinkData);
-      } else {
-        final drink = DrinkModel(
-          id: '',
-          name: drinkData['name'] as String,
-          imageUrl: drinkData['imageUrl'] as String,
-          caffeineinMg: drinkData['caffeineinMg'] as double,
-          standardVolume: drinkData['standardVolume'] as int,
-          information: drinkData['information'] as String,
-        );
-        await _adminDrinkService.addDrink(drink);
-      }
+          if (imageUrl == null) {
+            throw Exception('Failed to upload image');
+          }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isEditMode ? 'Drink updated successfully!' : 'Drink added successfully!'),
-            backgroundColor: const Color(0xFF6E3D2C),
-          ),
-        );
-        Navigator.pop(context);
+          if (_isEditMode && widget.drinkToEdit!.imageUrl.startsWith('http')) {
+            await _storageService.deleteDrinkImage(widget.drinkToEdit!.imageUrl);
+          }
+        } else if (_isEditMode) {
+          imageUrl = widget.drinkToEdit!.imageUrl;
+        }
+
+        final drinkData = {
+          'name': _nameController.text,
+          'imageUrl': imageUrl!,
+          'caffeineinMg': double.parse(_caffeineController.text),
+          'standardVolume': int.parse(_volumeController.text),
+          'information': _infoController.text,
+        };
+
+        if (_isEditMode) {
+          await _adminDrinkService.updateDrink(widget.drinkToEdit!.id, drinkData);
+        } else {
+          final drink = DrinkModel(
+            id: '',
+            name: drinkData['name'] as String,
+            imageUrl: drinkData['imageUrl'] as String,
+            caffeineinMg: drinkData['caffeineinMg'] as double,
+            standardVolume: drinkData['standardVolume'] as int,
+            information: drinkData['information'] as String,
+          );
+          await _adminDrinkService.addDrink(drink);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isEditMode ? 'Drink updated successfully!' : 'Drink added successfully!'),
+              backgroundColor: const Color(0xFF6E3D2C),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        setState(() => _isUploading = false);
       }
     }
   }
 
-  // Widget helper untuk reduce repetition
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -173,7 +178,7 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
           children: [
             // Image Picker
             GestureDetector(
-              onTap: _pickImage,
+              onTap: _isUploading ? null : _pickImage,
               child: Container(
                 height: 200,
                 decoration: BoxDecoration(
@@ -190,7 +195,14 @@ class _AdminAddDrinkPageState extends State<AdminAddDrinkPage> {
                     ? ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: widget.drinkToEdit!.imageUrl.startsWith('http')
-                      ? Image.network(widget.drinkToEdit!.imageUrl, fit: BoxFit.cover)
+                      ? Image.network(
+                    widget.drinkToEdit!.imageUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  )
                       : Image.asset(widget.drinkToEdit!.imageUrl, fit: BoxFit.cover),
                 )
                     : const Column(

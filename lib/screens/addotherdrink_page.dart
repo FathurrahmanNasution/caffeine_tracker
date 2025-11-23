@@ -159,7 +159,7 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          const AppTopNavigation(),
+          const AppTopNavigation(showBackButton: true),
           Expanded(
             child: SingleChildScrollView(
               child: Column(

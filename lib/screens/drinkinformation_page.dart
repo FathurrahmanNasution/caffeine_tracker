@@ -119,6 +119,26 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
   Future<void> _saveDrink() async {
     if (drink == null) return;
 
+    if (caffeineContent <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Caffeine content must be greater than 0!'),
+          backgroundColor: Color(0xFFFF5151),
+        ),
+      );
+      return;
+    }
+
+    if (selectedDateTime.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Time cannot be in the future!'),
+          backgroundColor: Color(0xFFFF5151),
+        ),
+      );
+      return;
+    }
+
     final log = ConsumptionLog(
       id: '',
       userId: currentUserId,
@@ -179,7 +199,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       backgroundColor: const Color(0xFFF5EBE0),
       body: Column(
         children: [
-          const AppTopNavigation(),
+          const AppTopNavigation(showBackButton: true),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -313,7 +333,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
             drink?.isFavorite ?? false
                 ? Icons.favorite
                 : Icons.favorite_border,
-            color: Colors.red,
+            color: Color(0xFFFF5151),
             size: 32,
           ),
         ),

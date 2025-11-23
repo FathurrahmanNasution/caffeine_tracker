@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 class ConsumptionForm extends StatelessWidget {
   final int servingSize;
@@ -74,6 +75,9 @@ class ConsumptionForm extends StatelessWidget {
                       controller: servingController,
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       onChanged: onServingChanged,
                       style: const TextStyle(
                         fontSize: 16,
@@ -131,6 +135,9 @@ class ConsumptionForm extends StatelessWidget {
                       controller: caffeineController,
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       onChanged: onCaffeineChanged,
                       style: const TextStyle(
                         fontSize: 16,

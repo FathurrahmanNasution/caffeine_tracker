@@ -1,10 +1,13 @@
+import 'package:intl/intl.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
+import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Drink {
   final String name;
@@ -308,7 +311,7 @@ class DashboardPageState extends State<DashboardPage> {
                 Navigator.of(context).pop();
                 _deleteDrink(index);
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: const Text('Delete', style: TextStyle(color: Color(0xFFFF5151))),
             ),
           ],
         );
@@ -334,26 +337,44 @@ class DashboardPageState extends State<DashboardPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hi there,',
-                            style: TextStyle(
-                              fontSize: 19,
-                              color: Color(0xff42261d),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            'User',
-                            style: TextStyle(
-                              fontSize: 19,
-                              color: Color(0xff42261d),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(currentUserId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          String displayName = 'User';
+
+                          if (snapshot.hasData && snapshot.data!.exists) {
+                            final user = UserModel.fromMap(
+                              currentUserId,
+                              snapshot.data!.data() as Map<String, dynamic>?,
+                            );
+                            displayName = user.displayName ?? 'User';
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Hi there,',
+                                style: TextStyle(
+                                  fontSize: 19,
+                                  color: Color(0xff42261d),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  fontSize: 19,
+                                  color: Color(0xff42261d),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -368,9 +389,9 @@ class DashboardPageState extends State<DashboardPage> {
                           ),
                           borderRadius: BorderRadius.circular(50),
                         ),
-                        child: const Text(
-                          'Oct 17th, 2025',
-                          style: TextStyle(
+                        child: Text(
+                          DateFormat('MMM d, y').format(DateTime.now()),
+                          style: const TextStyle(
                             fontSize: 15,
                             color: Color(0xff5b3020),
                             fontWeight: FontWeight.w600,
