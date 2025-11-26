@@ -112,7 +112,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-
     if (_loading) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5EBE0),
@@ -209,7 +208,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               title: 'View Users',
               subtitle: 'Manage user accounts',
               onTap: () {
-                _showSnackBar('Feature coming soon');
+                Navigator.pushNamed(context, '/admin_viewusers');
               },
             ),
           ],
