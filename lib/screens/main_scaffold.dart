@@ -19,8 +19,8 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   late int _currentIndex;
-  final GlobalKey<DashboardPageState> _dashboardKey = GlobalKey();
-  final GlobalKey<TrackerPageState> _trackerKey = GlobalKey(); // ✅ Added
+  final GlobalKey _dashboardKey = GlobalKey();
+  final GlobalKey _trackerKey = GlobalKey(); // ✅ Added
 
   @override
   void initState() {
@@ -29,11 +29,11 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _refreshDashboard() {
-    _dashboardKey.currentState?.refreshData();
+    (_dashboardKey.currentState as dynamic)?.refreshData();
   }
 
   void _refreshTracker() { // ✅ Added
-    _trackerKey.currentState?.refreshData();
+    (_trackerKey.currentState as dynamic)?.refreshData();
   }
 
   @override

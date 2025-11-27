@@ -1,4 +1,5 @@
 import 'package:caffeine_tracker/model/consumption_log.dart';
+import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
 import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
@@ -16,9 +17,22 @@ class TrackerPage extends StatefulWidget {
 
 class TrackerPageState extends State<TrackerPage> {
   final _firestore = FirebaseFirestore.instance;
+  final DrinkService _drinkService = DrinkService();
   List<ConsumptionLog> _consumptions = [];
 
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
+
+  Future<String> _getDrinkImage(String drinkId) async {
+    try {
+      final drink = await _drinkService.getDrinkById(drinkId);
+      if (drink != null && drink.imageUrl.isNotEmpty) {
+        return drink.imageUrl;
+      }
+      return '☕';
+    } catch (e) {
+      return '☕';
+    }
+  }
 
   DateTime selectedDate = DateTime.now();
   String sortBy = 'Weekly';
@@ -392,18 +406,17 @@ class TrackerPageState extends State<TrackerPage> {
 
       drinksList = dayConsumptions
           .map(
-            (log) =>
-        {
-          'name': log.drinkName,
-          'caffeine': log.caffeineContent,
-          'size': log.servingSize,
-        },
-      )
+            (log) => {
+              'name': log.drinkName,
+              'caffeine': log.caffeineContent,
+              'size': log.servingSize,
+            },
+          )
           .toList();
 
       totalCaffeine = dayConsumptions.fold<double>(
         0.0,
-            (total, log) => total + log.caffeineContent,
+        (total, log) => total + log.caffeineContent,
       );
       description = '';
     } else if (sortBy == 'Monthly') {
@@ -422,11 +435,11 @@ class TrackerPageState extends State<TrackerPage> {
 
       totalCaffeine = _consumptions
           .where((log) {
-        return log.consumedAt.year == filterYear &&
-            log.consumedAt.month == monthNumber &&
-            log.consumedAt.day >= weekStart &&
-            log.consumedAt.day <= weekEnd;
-      })
+            return log.consumedAt.year == filterYear &&
+                log.consumedAt.month == monthNumber &&
+                log.consumedAt.day >= weekStart &&
+                log.consumedAt.day <= weekEnd;
+          })
           .fold<double>(0.0, (total, log) => total + log.caffeineContent);
 
       description = 'Total caffeine consumed during $title';
@@ -449,13 +462,13 @@ class TrackerPageState extends State<TrackerPage> {
 
       totalCaffeine = _consumptions
           .where((log) {
-        return log.consumedAt.year == filterYear &&
-            log.consumedAt.month == key;
-      })
+            return log.consumedAt.year == filterYear &&
+                log.consumedAt.month == key;
+          })
           .fold<double>(0.0, (total, log) => total + log.caffeineContent);
 
       description =
-      'Total caffeine consumed during ${months[key - 1]} $filterYear';
+          'Total caffeine consumed during ${months[key - 1]} $filterYear';
     }
 
     showDialog(
@@ -498,67 +511,66 @@ class TrackerPageState extends State<TrackerPage> {
           ),
           content: drinksList != null
               ? SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: drinksList.length,
-              itemBuilder: (context, index) {
-                final d = drinksList![index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5EBE0),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFA67C52)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
+                  width: double.maxFinite,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: drinksList.length,
+                    itemBuilder: (context, index) {
+                      final d = drinksList![index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.brown[800],
-                          shape: BoxShape.circle,
+                          color: const Color(0xFFF5EBE0),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFA67C52)),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              d['name'] as String,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.brown[800],
+                                shape: BoxShape.circle,
                               ),
                             ),
-                            Text(
-                              '${(d['caffeine'] as double).toStringAsFixed(
-                                  1)}mg ~ ${d['size']}ml',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF6E3D2C),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    d['name'] as String,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${(d['caffeine'] as double).toStringAsFixed(1)}mg ~ ${d['size']}ml',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6E3D2C),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          )
+                )
               : Text(
-            description,
-            style: const TextStyle(
-              color: Color(0xFF6E3D2C),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+                  description,
+                  style: const TextStyle(
+                    color: Color(0xFF6E3D2C),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -580,7 +592,7 @@ class TrackerPageState extends State<TrackerPage> {
 
     return List.generate(
       daysInMonth,
-          (index) => DateTime(year, month, index + 1),
+      (index) => DateTime(year, month, index + 1),
     );
   }
 
@@ -681,9 +693,7 @@ class TrackerPageState extends State<TrackerPage> {
                     dropdownColor: const Color(0xFFD5BBA2),
                     isExpanded: true,
                     items: List.generate(10, (index) {
-                      final year = DateTime
-                          .now()
-                          .year - 5 + index;
+                      final year = DateTime.now().year - 5 + index;
                       return DropdownMenuItem(
                         value: year,
                         child: Text(
@@ -728,6 +738,18 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
+  Future<void> _editConsumption(ConsumptionLog log) async {
+    final result = await Navigator.pushNamed(
+      context,
+      '/drinkinformation',
+      arguments: log,
+    );
+
+    if (result == true && mounted) {
+      await _loadConsumptions();
+    }
+  }
+
   Future<void> _deleteConsumption(String consumptionId) async {
     try {
       await _firestore.collection('consumptions').doc(consumptionId).delete();
@@ -739,14 +761,13 @@ class TrackerPageState extends State<TrackerPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting drink: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error deleting drink: $e')));
       }
     }
   }
 
-  void _showDeleteDialog(String consumptionId) {
+  void _showDeleteDialog(ConsumptionLog log) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -756,9 +777,9 @@ class TrackerPageState extends State<TrackerPage> {
             'Delete Drink',
             style: TextStyle(color: Color(0xFF4B2C20)),
           ),
-          content: const Text(
-            'Are you sure you want to delete this drink?',
-            style: TextStyle(color: Color(0xFF6E3D2C)),
+          content: Text(
+            'Are you sure you want to delete ${log.drinkName}?',
+            style: const TextStyle(color: Color(0xFF6E3D2C)),
           ),
           actions: [
             TextButton(
@@ -771,7 +792,7 @@ class TrackerPageState extends State<TrackerPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _deleteConsumption(consumptionId);
+                _deleteConsumption(log.id);
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
@@ -915,10 +936,9 @@ class TrackerPageState extends State<TrackerPage> {
                     itemCount: visibleDates.length,
                     itemBuilder: (context, index) {
                       final date = visibleDates[index];
-                      final isSelected =
-                          date.day == selectedDate.day &&
-                              date.month == selectedDate.month &&
-                              date.year == selectedDate.year;
+                      final isSelected = date.day == selectedDate.day &&
+                          date.month == selectedDate.month &&
+                          date.year == selectedDate.year;
 
                       return GestureDetector(
                         onTap: () {
@@ -1020,14 +1040,22 @@ class TrackerPageState extends State<TrackerPage> {
           itemCount: todayConsumptions.length,
           itemBuilder: (context, index) {
             final log = todayConsumptions[index];
-            return ConsumptionLogCard(
-              name: log.drinkName,
-              caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
-              size: '${log.servingSize}ml',
-              time: DateFormat('hh:mm a').format(log.consumedAt),
-              image: '☕',
-              onTap: () => Navigator.pushNamed(context, '/drinkinformation'),
-              onDelete: () => _showDeleteDialog(log.id),
+            
+            return FutureBuilder<String>(
+              future: _getDrinkImage(log.drinkId), // ✅ Fetch drink image
+              builder: (context, imageSnapshot) {
+                final imageUrl = imageSnapshot.data ?? '☕';
+                
+                return ConsumptionLogCard(
+                  name: log.drinkName,
+                  caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
+                  size: '${log.servingSize}ml',
+                  time: DateFormat('hh:mm a').format(log.consumedAt),
+                  image: imageUrl, // ✅ Use dynamic image
+                  onTap: () => _editConsumption(log),
+                  onDelete: () => _showDeleteDialog(log),
+                );
+              },
             );
           },
         ),
@@ -1054,8 +1082,7 @@ class TrackerPageState extends State<TrackerPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildDropdown(
-                    sortBy, ['Weekly', 'Monthly', 'Yearly'], (value,) {
+                _buildDropdown(sortBy, ['Weekly', 'Monthly', 'Yearly'], (value) {
                   setState(() {
                     sortBy = value!;
                   });
@@ -1071,7 +1098,7 @@ class TrackerPageState extends State<TrackerPage> {
                       'Fourth Week',
                       'Fifth Week',
                     ],
-                        (value) {
+                    (value) {
                       setState(() => filterWeek = value!);
                     },
                   ),
@@ -1094,7 +1121,7 @@ class TrackerPageState extends State<TrackerPage> {
                       'November',
                       'December',
                     ],
-                        (value) {
+                    (value) {
                       setState(() => filterMonth = value!);
                     },
                   ),
@@ -1103,7 +1130,7 @@ class TrackerPageState extends State<TrackerPage> {
                 _buildDropdown(
                   '$filterYear',
                   ['2023', '2024', '2025', '2026'],
-                      (value) {
+                  (value) {
                     setState(() => filterYear = int.parse(value!));
                   },
                 ),
@@ -1115,53 +1142,11 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  Widget _buildSortByDropdown(
-      String value,
-      List<String> items,
-      Function(String?)? onChanged,
-      ) {
-    return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF6B4423),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(
-        child: DropdownButton<String>(
-          value: value,
-          dropdownColor: const Color(0xFF6B4423),
-          underline: const SizedBox(),
-          isDense: true,
-          icon: const Icon(
-            Icons.arrow_drop_down,
-            color: Colors.white,
-            size: 16,
-          ),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-          alignment: Alignment.center,
-          items: items.map((String item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              alignment: Alignment.center,
-              child: Text(item),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
   Widget _buildDropdown(
-      String value,
-      List<String> items,
-      Function(String?)? onChanged,
-      ) {
+    String value,
+    List<String> items,
+    Function(String?)? onChanged,
+  ) {
     return Container(
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: 8),

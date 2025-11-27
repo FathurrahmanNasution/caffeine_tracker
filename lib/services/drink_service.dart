@@ -34,6 +34,19 @@ class DrinkService {
     );
   }
 
+  Future<DrinkModel?> getDrinkById(String drinkId) async {
+    try {
+      final doc = await _firestore.collection('drinks').doc(drinkId).get();
+      if (doc.exists && doc.data() != null) {
+        return DrinkModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting drink by ID: $e');
+      return null;
+    }
+  }
+
   // Get non-favorite drinks only
   Stream<List<DrinkModel>> getNonFavoriteDrinksForUser(String userId) {
     return Rx.combineLatest2(
