@@ -5,7 +5,7 @@ class ConsumptionLogCard extends StatelessWidget {
   final String caffeine;
   final String size;
   final String time;
-  final String image;
+  final String image; // Can be URL, asset path, or emoji
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
@@ -34,18 +34,11 @@ class ConsumptionLogCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.brown[800],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(image, style: const TextStyle(fontSize: 28)),
-              ),
-            ),
+            // ✅ Dynamic Image Container
+            _buildImageContainer(),
             const SizedBox(width: 15),
+
+            // TEXT INFO
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,6 +83,8 @@ class ConsumptionLogCard extends StatelessWidget {
                 ],
               ),
             ),
+
+            // DELETE BUTTON
             GestureDetector(
               onTap: onDelete,
               child: Transform.translate(
@@ -105,6 +100,96 @@ class ConsumptionLogCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ Build image container that handles URLs, assets, and emojis
+  Widget _buildImageContainer() {
+    // Check if it's a URL (network image)
+    if (image.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          image,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildFallbackContainer();
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.brown[800],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+    // Check if it's an asset path
+    else if (image.startsWith('assets/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          image,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildFallbackContainer();
+          },
+        ),
+      );
+    }
+    // Otherwise treat as emoji
+    else {
+      return Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.brown[800],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            image,
+            style: const TextStyle(fontSize: 28),
+          ),
+        ),
+      );
+    }
+  }
+
+  // ✅ Fallback container for failed image loads
+  Widget _buildFallbackContainer() {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.brown[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Center(
+        child: Text(
+          '☕',
+          style: TextStyle(fontSize: 28),
         ),
       ),
     );
