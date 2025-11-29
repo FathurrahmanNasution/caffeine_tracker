@@ -6,65 +6,101 @@ class LandingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFD8B899),
+      backgroundColor: const Color(0xFFD5BBA2),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 40.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(flex: 2),
-              Image.asset("assets/images/coffee.png", height: 200),
-              const Spacer(flex: 1),
+              const Spacer(flex: 3),
+              // Coffee illustration
+              Image.asset(
+                "assets/images/coffee.png",
+                height: 240,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 60),
+              // Title with styled text
               RichText(
                 textAlign: TextAlign.center,
                 text: const TextSpan(
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
                     color: Colors.black,
+                    height: 1.3,
                   ),
                   children: [
-                    TextSpan(text: "Welcome to "),
+                    TextSpan(text: "Track Your "),
                     TextSpan(
-                      text: "Caffeine Tracker",
-                      style: TextStyle(
-                        color: Color(0xFF5D4037),
-                      ),
+                      text: "Caffeine",
+                      style: TextStyle(color: Color(0xFF874C2B)),
+                    ),
+                    TextSpan(text: ",\nTransform Your "),
+                    TextSpan(
+                      text: "Health",
+                      style: TextStyle(color: Color(0xFF4E8D7C)),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              const SizedBox(height: 16),
+              // Subtitle
+              Text(
                 "Stay healthy by tracking every drink.",
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Color(0xFFFFFFFF),
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
                   fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 2),
+                      blurRadius: 4,
+                      color: Colors.black.withOpacity(0.25),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(flex: 2),
+              const Spacer(flex: 1),
+              // Get Started button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(166, 124, 82, 1),
+                    backgroundColor: const Color(0xFFA67C52),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(25),
                     ),
+                    elevation: 0,
                   ),
                   onPressed: () {
                     Navigator.pushNamed(context, '/signup');
                   },
-                  child: const Text(
+                  child: Text(
                     "Get Started",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 2),
+                          blurRadius: 4,
+                          color: Colors.black.withOpacity(0.3),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 60),
             ],
           ),
         ),
