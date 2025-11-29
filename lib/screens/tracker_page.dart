@@ -101,11 +101,12 @@ class TrackerPageState extends State<TrackerPage> {
         targetDay,
       );
 
-      final isBeforeOrToday = targetDate.isBefore(now);
+      final isBeforeOrToday =
+          targetDate.isBefore(now) ||
+          targetDate.isAtSameMomentAs(DateTime(now.year, now.month, now.day));
       final isPastMonth =
           (filterYear < now.year) ||
-              (filterYear == now.year &&
-                  _getMonthNumber(filterMonth) < now.month);
+          (filterYear == now.year && _getMonthNumber(filterMonth) < now.month);
 
       if (isPastMonth) {
         return targetDate.month == _getMonthNumber(filterMonth) &&
@@ -134,8 +135,7 @@ class TrackerPageState extends State<TrackerPage> {
 
       final isPastMonth =
           (filterYear < now.year) ||
-              (filterYear == now.year &&
-                  _getMonthNumber(filterMonth) < now.month);
+          (filterYear == now.year && _getMonthNumber(filterMonth) < now.month);
 
       if (isPastMonth) {
         return true;
@@ -330,27 +330,12 @@ class TrackerPageState extends State<TrackerPage> {
 
   List<String> _getChartLabels() {
     if (sortBy == 'Weekly') {
-      return _getWeeklyLabels();
+      return ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     } else if (sortBy == 'Monthly') {
       return _getMonthlyLabels();
     } else {
       return ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
     }
-  }
-
-  List<String> _getWeeklyLabels() {
-    int weekStart = _getWeekStart(filterWeek);
-    int weekEnd = _getWeekEnd(
-      filterWeek,
-      filterYear,
-      _getMonthNumber(filterMonth),
-    );
-
-    List<String> labels = [];
-    for (int i = weekStart; i <= weekEnd; i++) {
-      labels.add('$i');
-    }
-    return labels;
   }
 
   List<String> _getMonthlyLabels() {
@@ -585,68 +570,24 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  List<DateTime> _generateMonthDates() {
-    final year = selectedDate.year;
-    final month = selectedDate.month;
-    final daysInMonth = DateTime(year, month + 1, 0).day;
-
-    return List.generate(
-      daysInMonth,
-      (index) => DateTime(year, month, index + 1),
+  List<DateTime> _getWeekDates() {
+    // Get the start of the week (Monday) for the selected date
+    final startOfWeek = selectedDate.subtract(
+      Duration(days: selectedDate.weekday - 1),
     );
+
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
-  List<DateTime> _getVisibleDates() {
-    final monthDates = _generateMonthDates();
-    final currentIndex = selectedDate.day - 1;
-
-    final startIndex = (currentIndex ~/ 5) * 5;
-    final endIndex = (startIndex + 5).clamp(0, monthDates.length);
-
-    return monthDates.sublist(startIndex, endIndex);
-  }
-
-  void _navigateToPreviousDates() {
+  void _navigateToPreviousWeek() {
     setState(() {
-      final currentDay = selectedDate.day;
-
-      if (currentDay <= 5) {
-        final prevMonth = DateTime(
-          selectedDate.year,
-          selectedDate.month - 1,
-          1,
-        );
-        final daysInPrevMonth = DateTime(
-          prevMonth.year,
-          prevMonth.month + 1,
-          0,
-        ).day;
-
-        final lastPageStart = ((daysInPrevMonth - 1) ~/ 5) * 5 + 1;
-        selectedDate = DateTime(prevMonth.year, prevMonth.month, lastPageStart);
-      } else {
-        final newDay = ((currentDay - 6) ~/ 5) * 5 + 1;
-        selectedDate = DateTime(selectedDate.year, selectedDate.month, newDay);
-      }
+      selectedDate = selectedDate.subtract(const Duration(days: 7));
     });
   }
 
-  void _navigateToNextDates() {
+  void _navigateToNextWeek() {
     setState(() {
-      final monthDates = _generateMonthDates();
-      final currentDay = selectedDate.day;
-      final currentPageStart = ((currentDay - 1) ~/ 5) * 5 + 1;
-      final nextPageStart = currentPageStart + 5;
-
-      if (nextPageStart > monthDates.length) {
-        selectedDate = DateTime(selectedDate.year, selectedDate.month + 1, 1);
-      } else {
-        selectedDate = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          nextPageStart,
-        );
-      }
+      selectedDate = selectedDate.add(const Duration(days: 7));
     });
   }
 
@@ -761,8 +702,9 @@ class TrackerPageState extends State<TrackerPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error deleting drink: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting drink: $e')));
       }
     }
   }
@@ -815,24 +757,33 @@ class TrackerPageState extends State<TrackerPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildCalendarSection(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   _buildDrinksList(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   _buildSortBySection(),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   if (_hasDataToShow())
-                    CaffeineChart(
-                      data: _getChartData(),
-                      type: _getChartType(),
-                      labels: _getChartLabels(),
-                      onTap: _handleChartTap,
-                      shouldShowPoint: _shouldShowDataPoint,
+                    Center(
+                      // Center the graph
+                      child: Container(
+                        width:
+                            MediaQuery.of(context).size.width *
+                            0.85, // 85% of screen width
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: CaffeineChart(
+                          data: _getChartData(),
+                          type: _getChartType(),
+                          labels: _getChartLabels(),
+                          onTap: _handleChartTap,
+                          shouldShowPoint: _shouldShowDataPoint,
+                        ),
+                      ),
                     )
                   else
                     Container(
                       margin: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 40,
+                        vertical: 20,
                       ),
                       padding: const EdgeInsets.all(30),
                       decoration: BoxDecoration(
@@ -842,7 +793,11 @@ class TrackerPageState extends State<TrackerPage> {
                       child: Column(
                         children: [
                           Text(
-                            'Oh no! ${sortBy == 'Weekly' ? 'Weekly' : sortBy == 'Monthly' ? 'Monthly' : 'Yearly'} Intake Unavailable',
+                            'Oh no! ${sortBy == 'Weekly'
+                                ? 'Weekly'
+                                : sortBy == 'Monthly'
+                                ? 'Monthly'
+                                : 'Yearly'} Intake Unavailable',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 20,
@@ -865,7 +820,11 @@ class TrackerPageState extends State<TrackerPage> {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            'It looks like you haven\'t logged enough drinks this ${sortBy.toLowerCase() == 'weekly' ? 'week' : sortBy.toLowerCase() == 'monthly' ? 'month' : 'year'}. Add a few more and we\'ll calculate your total!',
+                            'It looks like you haven\'t logged enough drinks this ${sortBy.toLowerCase() == 'weekly'
+                                ? 'week'
+                                : sortBy.toLowerCase() == 'monthly'
+                                ? 'month'
+                                : 'year'}. Add a few more and we\'ll calculate your total!',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 15,
@@ -876,7 +835,7 @@ class TrackerPageState extends State<TrackerPage> {
                         ],
                       ),
                     ),
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -887,119 +846,123 @@ class TrackerPageState extends State<TrackerPage> {
   }
 
   Widget _buildCalendarSection() {
-    final visibleDates = _getVisibleDates();
+    final weekDates = _getWeekDates();
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: _showMonthYearPicker,
-                child: Row(
-                  children: [
-                    Text(
-                      DateFormat('MMMM yyyy').format(selectedDate),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4B2C20),
-                      ),
+          // Month and Year header
+          Padding(
+            padding: const EdgeInsets.only(left: 24), // Align with calendar
+            child: GestureDetector(
+              onTap: _showMonthYearPicker,
+              child: Row(
+                children: [
+                  Text(
+                    DateFormat('MMMM yyyy').format(selectedDate),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4B2C20),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_drop_down, color: Color(0xFF6E3D2C)),
-                  ],
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    color: Color(0xFF6E3D2C),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Week calendar
+          Row(
+            children: [
+              // Left arrow
+              IconButton(
+                icon: const Icon(
+                  Icons.chevron_left,
+                  color: Color(0xFF6E3D2C),
+                  size: 24,
+                ),
+                onPressed: _navigateToPreviousWeek,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              // Week days
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: weekDates.map((date) {
+                    final isSelected =
+                        date.day == selectedDate.day &&
+                        date.month == selectedDate.month &&
+                        date.year == selectedDate.year;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedDate = date;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF52796F)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20), // Oval shape
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat('E').format(date).substring(0, 3),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF8B7A6A),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${date.day}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF4B2C20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
+              // Right arrow
+              IconButton(
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF6E3D2C),
+                  size: 24,
+                ),
+                onPressed: _navigateToNextWeek,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ],
-          ),
-          const SizedBox(height: 15),
-          SizedBox(
-            height: 70,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.chevron_left,
-                    color: Color(0xFF6E3D2C),
-                    size: 20,
-                  ),
-                  onPressed: _navigateToPreviousDates,
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: visibleDates.length,
-                    itemBuilder: (context, index) {
-                      final date = visibleDates[index];
-                      final isSelected = date.day == selectedDate.day &&
-                          date.month == selectedDate.month &&
-                          date.year == selectedDate.year;
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedDate = date;
-                          });
-                        },
-                        child: Container(
-                          width: 50,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Column(
-                            children: [
-                              Text(
-                                DateFormat('E').format(date).substring(0, 3),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isSelected
-                                      ? const Color(0xFF6E3D2C)
-                                      : Colors.black54,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF52796F)
-                                      : Colors.transparent,
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '${date.day}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.chevron_right,
-                    color: Color(0xFF6E3D2C),
-                    size: 20,
-                  ),
-                  onPressed: _navigateToNextDates,
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -1013,17 +976,29 @@ class TrackerPageState extends State<TrackerPage> {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
-          height: 200,
+          height: 150,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: const Color(0xFFD5BBA2).withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFA67C52).withOpacity(0.3)),
           ),
           child: const Center(
-            child: Text(
-              'No drinks logged for this day',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6E3D2C)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.coffee_outlined, size: 40, color: Color(0xFF6E3D2C)),
+                SizedBox(height: 8),
+                Text(
+                  'No drinks logged for this day',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6E3D2C),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1032,28 +1007,124 @@ class TrackerPageState extends State<TrackerPage> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        height: 250,
+      child: Container(
+        height: 200, // Fixed height for scrollable area
         child: ListView.builder(
           shrinkWrap: true,
-          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: todayConsumptions.length,
           itemBuilder: (context, index) {
             final log = todayConsumptions[index];
-            
+
             return FutureBuilder<String>(
-              future: _getDrinkImage(log.drinkId), // ✅ Fetch drink image
+              future: _getDrinkImage(log.drinkId),
               builder: (context, imageSnapshot) {
                 final imageUrl = imageSnapshot.data ?? '☕';
-                
-                return ConsumptionLogCard(
-                  name: log.drinkName,
-                  caffeine: '${log.caffeineContent.toStringAsFixed(0)}mg',
-                  size: '${log.servingSize}ml',
-                  time: DateFormat('hh:mm a').format(log.consumedAt),
-                  image: imageUrl, // ✅ Use dynamic image
-                  onTap: () => _editConsumption(log),
-                  onDelete: () => _showDeleteDialog(log),
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8DCC8),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Drink Image
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: imageUrl.startsWith('http')
+                              ? Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Text(
+                                        '☕',
+                                        style: TextStyle(fontSize: 24),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Center(
+                                  child: Text(
+                                    imageUrl,
+                                    style: const TextStyle(fontSize: 24),
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Drink Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              log.drinkName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4B2C20),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${log.caffeineContent.toStringAsFixed(0)}mg ~ ${log.servingSize}ml',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6E3D2C),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6E3D2C),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                DateFormat('hh:mm a').format(log.consumedAt),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Delete Button
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Color(0xFF6E3D2C),
+                          size: 20,
+                        ),
+                        onPressed: () => _showDeleteDialog(log),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
                 );
               },
             );
@@ -1082,7 +1153,10 @@ class TrackerPageState extends State<TrackerPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildDropdown(sortBy, ['Weekly', 'Monthly', 'Yearly'], (value) {
+                // First dropdown with different styling
+                _buildPrimaryDropdown(sortBy, ['Weekly', 'Monthly', 'Yearly'], (
+                  value,
+                ) {
                   setState(() {
                     sortBy = value!;
                   });
@@ -1142,6 +1216,55 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
+  // New method for the primary dropdown (Weekly/Monthly/Yearly)
+  Widget _buildPrimaryDropdown(
+    String value,
+    List<String> items,
+    Function(String?)? onChanged,
+  ) {
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5B3020), // Dark brown background
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Center(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: const Color(0xFF5B3020),
+          underline: const SizedBox(),
+          isDense: true,
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            color: Colors.white,
+            size: 16,
+          ),
+          style: const TextStyle(
+            color: Colors.white, // White text
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          alignment: Alignment.center,
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              alignment: Alignment.center,
+              child: Text(
+                item,
+                style: const TextStyle(
+                  color: Colors.white,
+                ), // White text in dropdown
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  // Keep the existing _buildDropdown for other dropdowns
   Widget _buildDropdown(
     String value,
     List<String> items,
