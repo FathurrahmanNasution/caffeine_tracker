@@ -354,10 +354,10 @@ class AuthService {
           'displayName': displayName,
           'username': generatedUsername,
           'photoUrl': user.photoURL,
-          'createdAt': FieldValue.serverTimestamp(),
           'authProvider': 'google',
-          'hasCompletedOnboarding': false,
           'emailVerified': true,
+          'isAdmin': false,
+          'createdAt': FieldValue.serverTimestamp(),
         });
 
         await _firestore.collection('usernames').doc(generatedUsername).set({
@@ -366,11 +366,12 @@ class AuthService {
           'createdAt': FieldValue.serverTimestamp(),
         });
       } else {
-        if (user.photoURL != null) {
-          await userRef.update({
-            'photoUrl': user.photoURL,
-          });
-        }
+        
+        await userRef.update({
+          'photoUrl': user.photoURL,
+          'authProvider': 'google',
+          'emailVerified': true,
+        });
       }
 
       final updatedDoc = await userRef.get();
@@ -446,6 +447,85 @@ class AuthService {
     if (user != null && data.containsKey('displayName')) {
       await user.updateDisplayName(data['displayName'] as String?);
       await user.reload();
+    }
+  }
+
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found with this email address.');
+      } else if (e.code == 'invalid-email') {
+        throw Exception('Invalid email address.');
+      } else if (e.code == 'too-many-requests') {
+        throw Exception('Too many requests. Please try again later.');
+      }
+      throw Exception('Failed to send password reset email: ${e.message}');
+    }
+  }
+
+  // Verify password reset code
+  Future<bool> verifyPasswordResetCode(String code) async {
+    try {
+      await _auth.verifyPasswordResetCode(code);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Confirm password reset with code
+  Future<void> confirmPasswordReset(String code, String newPassword) async {
+    try {
+      await _auth.confirmPasswordReset(code: code, newPassword: newPassword);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'expired-action-code') {
+        throw Exception('Reset link has expired. Please request a new one.');
+      } else if (e.code == 'invalid-action-code') {
+        throw Exception('Invalid or already used reset link.');
+      } else if (e.code == 'weak-password') {
+        throw Exception('Password is too weak. Please use a stronger password.');
+      }
+      throw Exception('Failed to reset password: ${e.message}');
+    }
+  }
+
+  // Get email from username (for forgot password flow)
+  Future<String?> getEmailFromUsername(String username) async {
+    try {
+      final uname = _normalize(username);
+      final unameRef = _firestore.collection('usernames').doc(uname);
+      final unameDoc = await unameRef.get();
+      
+      if (!unameDoc.exists) {
+        return null;
+      }
+      
+      final data = unameDoc.data();
+      return data?['email'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Update password for logged-in user (for dashboard change password)
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('No user is currently signed in');
+      }
+      
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw Exception('Please sign out and sign in again before changing your password.');
+      } else if (e.code == 'weak-password') {
+        throw Exception('Password is too weak. Please use a stronger password.');
+      }
+      throw Exception('Failed to update password: ${e.message}');
     }
   }
 }

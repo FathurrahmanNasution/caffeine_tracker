@@ -9,6 +9,7 @@ class UserModel {
   final DateTime? createdAt;
   final bool isAdmin;
   final bool emailVerified;
+  final String? authProvider; 
 
   UserModel({
     required this.uid,
@@ -19,6 +20,7 @@ class UserModel {
     this.createdAt,
     this.isAdmin = false,
     this.emailVerified = false,
+    this.authProvider,
   });
 
   factory UserModel.fromMap(String uid, Map<String, dynamic>? map) {
@@ -38,6 +40,7 @@ class UserModel {
       displayName: map['displayName'] as String?,
       username: map['username'] as String?,
       photoUrl: map['photoUrl'] as String?,
+      authProvider: map['authProvider'] as String?,
       createdAt: created,
       isAdmin: map['isAdmin'] as bool? ?? false,
       emailVerified: map['emailVerified'] as bool? ?? false,
@@ -49,8 +52,13 @@ class UserModel {
         'displayName': displayName,
         'username': username,
         'photoUrl': photoUrl,
+        'authProvider': authProvider,
         'createdAt': createdAt == null ? null : Timestamp.fromDate(createdAt!),
         'isAdmin': isAdmin,
         'emailVerified': emailVerified,
       };
+
+  
+  bool get isGoogleUser => authProvider == 'google';
+  bool get isEmailPasswordUser => authProvider == 'email';
 }

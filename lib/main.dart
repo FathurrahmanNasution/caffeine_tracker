@@ -1,4 +1,3 @@
-import 'package:caffeine_tracker/screens/account_authorization_page.dart';
 import 'package:caffeine_tracker/screens/addotherdrink_page.dart';
 import 'package:caffeine_tracker/screens/admin_manage_drinks_page.dart';
 import 'package:caffeine_tracker/screens/admin_dashboard_page.dart';
@@ -6,6 +5,7 @@ import 'package:caffeine_tracker/screens/admin_view_users_page.dart';
 import 'package:caffeine_tracker/screens/change_password_page.dart';
 import 'package:caffeine_tracker/screens/drinkinformation_page.dart';
 import 'package:caffeine_tracker/screens/email_verification_page.dart';
+import 'package:caffeine_tracker/screens/forgot_password_page.dart';
 import 'package:caffeine_tracker/screens/landing_page.dart';
 import 'package:caffeine_tracker/screens/onboarding_page.dart';
 import 'package:caffeine_tracker/screens/signin_page.dart';
@@ -53,8 +53,8 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpPage(),
         '/signin': (context) => const SignInPage(),
         '/admin-dashboard': (context) => const AdminDashboardPage(),
-        '/accountauthorization': (context) => const AccountAuthorizationPage(),
         '/change-password': (context) => const ChangePasswordPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
         '/onboarding': (context) => const OnboardingPage(),
         '/dashboard': (context) => const MainScaffold(initialIndex: 0),
         '/coffeelist': (context) => const MainScaffold(initialIndex: 1),
@@ -72,6 +72,15 @@ class MyApp extends StatelessWidget {
             builder: (context) => EmailVerificationPage(email: email),
           );
         }
+        
+        // Handle password reset link with code
+        if (settings.name == '/change-password') {
+          final resetCode = settings.arguments as String?;
+          return MaterialPageRoute(
+            builder: (context) => ChangePasswordPage(resetCode: resetCode),
+          );
+        }
+        
         return null;
       },
     );

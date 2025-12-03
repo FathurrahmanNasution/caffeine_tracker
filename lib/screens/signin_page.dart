@@ -311,7 +311,7 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   void _handleForgotPassword() {
-    Navigator.pushNamed(context, '/accountauthorization');
+    Navigator.pushNamed(context, '/forgot-password'); 
   }
 
   Future<void> _handleSignIn() async {

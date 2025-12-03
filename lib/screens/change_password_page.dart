@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
 class ChangePasswordPage extends StatefulWidget {
-  const ChangePasswordPage({super.key});
+  final String? resetCode; // Optional - from email link
+
+  const ChangePasswordPage({super.key, this.resetCode});
 
   @override
   State<ChangePasswordPage> createState() => _ChangePasswordPageState();
@@ -17,6 +19,37 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _loading = false;
+  bool _isResetMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isResetMode = widget.resetCode != null;
+    if (_isResetMode) {
+      _verifyResetCode();
+    }
+  }
+
+  Future<void> _verifyResetCode() async {
+    if (widget.resetCode == null) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final isValid = await _auth.verifyPasswordResetCode(widget.resetCode!);
+      if (!isValid) {
+        if (!mounted) return;
+        _showSnackBar('Invalid or expired reset link');
+        Navigator.pushReplacementNamed(context, '/signin');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Error verifying reset link');
+      Navigator.pushReplacementNamed(context, '/signin');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -47,23 +80,27 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     setState(() => _loading = true);
 
     try {
-      // Add your password change logic here
-      // await _auth.updatePassword(newPassword);
+      if (_isResetMode && widget.resetCode != null) {
+        // Reset password using code from email
+        await _auth.confirmPasswordReset(widget.resetCode!, newPassword);
 
-      if (!mounted) return;
+        if (!mounted) return;
+        _showSnackBar("Password reset successfully!", isError: false);
+      } else {
+        // Update password for logged-in user
+        await _auth.updatePassword(newPassword);
 
-      _showSnackBar("Password changed successfully!", isError: false);
+        if (!mounted) return;
+        _showSnackBar("Password changed successfully!", isError: false);
+      }
 
-      // Wait a moment to show the success message
       await Future.delayed(const Duration(seconds: 1));
 
       if (!mounted) return;
-
-      // Navigate to sign in page
       Navigator.pushReplacementNamed(context, '/signin');
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Error: ${e.toString()}');
+      _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -84,9 +121,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD8B899),
+      appBar: _isResetMode
+          ? null
+          : AppBar(
+              backgroundColor: const Color(0xFFD8B899),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF3D2920)),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
       body: Column(
         children: [
-          // Logo section with fixed height
           Container(
             padding: const EdgeInsets.only(top: 40, bottom: 30),
             child: Image.asset(
@@ -109,8 +155,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               },
             ),
           ),
-
-          // Card Container - Expanded to fill remaining space
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(24),
@@ -126,26 +170,26 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Change Password",
-                      style: TextStyle(
+                    Text(
+                      _isResetMode ? "Reset Password" : "Change Password",
+                      style: const TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF3D2920),
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      "Please enter your new password",
-                      style: TextStyle(
+                    Text(
+                      _isResetMode
+                          ? "Enter your new password"
+                          : "Please enter your new password",
+                      style: const TextStyle(
                         color: Color(0xFF5D4E47),
                         fontSize: 14,
                         height: 1.5,
                       ),
                     ),
                     const SizedBox(height: 30),
-
-                    // New Password Field
                     _buildLabeledTextField(
                       label: "New Password",
                       controller: newPasswordController,
@@ -158,10 +202,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 18),
-
-                    // Password Confirmation Field
                     _buildLabeledTextField(
                       label: "Password Confirmation",
                       controller: confirmPasswordController,
@@ -175,10 +216,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 30),
-
-                    // Save New Password Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -203,9 +241,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                   ),
                                 ),
                               )
-                            : const Text(
-                                "Save New Password",
-                                style: TextStyle(
+                            : Text(
+                                _isResetMode
+                                    ? "Reset Password"
+                                    : "Save New Password",
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),

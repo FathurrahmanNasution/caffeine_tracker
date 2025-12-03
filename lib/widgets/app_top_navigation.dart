@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caffeine_tracker/model/user_model.dart';
 import 'package:caffeine_tracker/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class AppTopNavigation extends StatelessWidget {
   final VoidCallback? onLogoTap;
@@ -13,6 +15,138 @@ class AppTopNavigation extends StatelessWidget {
     this.onLogoTap,
     this.showBackButton = false,
   });
+
+  // ✅ Add method to check if user is using Google authentication
+  Future<bool> _isGoogleUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
+    // Check if user has Google as a provider
+    for (var provider in user.providerData) {
+      if (provider.providerId == 'google.com') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // ✅ Add method to show Google account dialog
+  void _showGoogleAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5EBE0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.orange[700],
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Google Account',
+                style: TextStyle(
+                  color: Color(0xFF42261D),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You are signed in with Google.',
+                style: TextStyle(
+                  color: Color(0xFF42261D),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'To change your password, please use Google\'s account settings.',
+                style: TextStyle(
+                  color: Color(0xFF6E3D2C),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Visit: myaccount.google.com',
+                style: TextStyle(
+                  color: Color(0xFF4A7C59),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFF6E3D2C),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Got it',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ✅ Update method to check authProvider field
+  Future<void> _handleChangePassword(BuildContext context) async {
+    // Get current user's authProvider from Firestore
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      
+      if (!userDoc.exists) return;
+      
+      final userData = userDoc.data();
+      final authProvider = userData?['authProvider'] as String?; // ✅ Changed to 'authProvider'
+      
+      if (authProvider == 'google') {
+        _showGoogleAccountDialog(context);
+      } else {
+        Navigator.pushNamed(context, '/change-password');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error checking authProvider: $e');
+      }
+      Navigator.pushNamed(context, '/change-password');
+    }
+  }
 
   Widget _buildProfileAvatar(UserModel? userProfile) {
     // Jika ada photo URL, gunakan CachedNetworkImage
@@ -268,7 +402,8 @@ class AppTopNavigation extends StatelessWidget {
                 },
                 onSelected: (String value) async {
                   if (value == 'change_password') {
-                    Navigator.pushNamed(context, '/change-password');
+                    // ✅ Use the new handler method
+                    await _handleChangePassword(context);
                   } else if (value == 'logout') {
                     await auth.signOut();
                     if (context.mounted) {
