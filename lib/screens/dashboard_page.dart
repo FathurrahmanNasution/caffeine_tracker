@@ -20,6 +20,7 @@ class DashboardPage extends StatefulWidget {
 class DashboardPageState extends State<DashboardPage> {
   final _consumptionService = ConsumptionService();
   final DrinkService _drinkService = DrinkService();
+  final _firestore = FirebaseFirestore.instance;
   final double maxCaffeineLimit = 400; // Maximum daily caffeine in mg
 
   String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "";
@@ -321,39 +322,40 @@ class DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  // ✅ Simplified - confirmation is now in the card widget
   Future<void> _deleteConsumption(ConsumptionLog log) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Drink'),
-          content: Text('Are you sure you want to delete ${log.drinkName}?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Color(0xFFFF5151)),
-              ),
-            ),
-          ],
-        );
-      },
+  try {
+    await _firestore.collection('consumptions').doc(log.id).delete();
+    
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${log.drinkName} deleted successfully'),
+        backgroundColor: const Color(0xFF6E3D2C),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
     );
-
-    if (confirmed == true) {
-      await _consumptionService.deleteConsumption(log.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Drink deleted successfully')),
-        );
-      }
-    }
+  } catch (e) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error deleting drink: $e'),
+        backgroundColor: const Color(0xFFFF5151),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -597,9 +599,8 @@ class DashboardPageState extends State<DashboardPage> {
 
                                 return ConsumptionLogCard(
                                   name: log.drinkName,
-                                  caffeine:
-                                      '${log.caffeineContent.toStringAsFixed(0)}mg',
-                                  size: '${log.servingSize}ml',
+                                  caffeine: '${log.caffeineContent.toStringAsFixed(1)} mg',
+                                  size: '${log.servingSize} ml',
                                   time: _formatTime(log.consumedAt),
                                   image: imageUrl,
                                   onTap: () => _editConsumption(log),

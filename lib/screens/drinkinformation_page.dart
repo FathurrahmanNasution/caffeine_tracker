@@ -313,66 +313,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
     }
   }
 
-  Future<void> _handleDelete() async {
-    if (consumptionLog == null || !isEditMode) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFFF5EBE0),
-          title: const Text(
-            'Delete Consumption',
-            style: TextStyle(
-              color: Color(0xFF42261D),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: const Text(
-            'Are you sure you want to delete this consumption log?',
-            style: TextStyle(color: Color(0xFF42261D)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF6E3D2C)),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'Delete',
-                style: TextStyle(
-                  color: Color(0xFFFF5151),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true) {
-      if (!mounted) return;
-      final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
-
-      await _consumptionService.deleteConsumption(consumptionLog!.id);
-
-      if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Consumption deleted successfully'),
-          backgroundColor: Color(0xFF6E3D2C),
-        ),
-      );
-      navigator.pop(true);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -568,7 +508,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
 
   Widget _buildInformationSection() {
     final info = isEditMode
-        ? "Editing consumption log - adjust serving size and caffeine will auto-calculate"
+        ? "Adjust serving size and caffeine will auto-calculate based on the drink's standard ratio."
         : (drink?.information ?? "No information available");
 
     return Column(
@@ -577,9 +517,8 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
         Row(
           children: [
             Chip(
-              label: Text(isEditMode ? "Edit Mode" : "Information"),
-              backgroundColor:
-                  isEditMode ? const Color(0xFF6E3D2C) : const Color(0xFF4E8D7C),
+              label: const Text("Information"), // ✅ Always show "Information"
+              backgroundColor: const Color(0xFF4E8D7C), // ✅ Always use same color
               labelStyle: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -640,39 +579,6 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
             ),
           ),
         ),
-
-        // Delete Button (only in edit mode)
-        if (isEditMode) ...[
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFFF5151), width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: _handleDelete,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.delete_outline, color: Color(0xFFFF5151), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    "Delete",
-                    style: TextStyle(
-                      color: Color(0xFFFF5151),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
         const SizedBox(height: 20),
       ],
     );

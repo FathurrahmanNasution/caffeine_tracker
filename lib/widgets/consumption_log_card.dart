@@ -5,7 +5,7 @@ class ConsumptionLogCard extends StatelessWidget {
   final String caffeine;
   final String size;
   final String time;
-  final String image; // Can be URL, asset path, or emoji
+  final String image;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
@@ -20,94 +20,210 @@ class ConsumptionLogCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xffd5bba2),
-          border: Border.all(color: const Color(0xffa67c52), width: 1.0),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            // ✅ Dynamic Image Container
-            _buildImageContainer(),
-            const SizedBox(width: 15),
-
-            // TEXT INFO
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5EBE0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFFF5151),
+                size: 24,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Delete Consumption',
+                  style: TextStyle(
+                    color: Color(0xFF42261D),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
-                  Text(
-                    '$caffeine • $size',
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      color: Color(0xff42261d),
-                      fontWeight: FontWeight.w600,
-                    ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Are you sure you want to delete this consumption?',
+                  style: TextStyle(
+                    color: Color(0xFF42261D),
+                    fontSize: 14,
                   ),
-                  if (time.isNotEmpty) ...[
-                    const SizedBox(height: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xff6e3d2c),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        time,
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD5BBA2).withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF42261D),
                         ),
                       ),
-                    ),
-                  ],
-                ],
+                      const SizedBox(height: 4),
+                      Text(
+                        '$caffeine • $size',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6E3D2C),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF6E3D2C),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-
-            // DELETE BUTTON
-            GestureDetector(
-              onTap: onDelete,
-              child: Transform.translate(
-                offset: const Offset(10, -25.0),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.black54,
-                    size: 20,
-                  ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5151),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Delete',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
           ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      onDelete();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xffd5bba2),
+              border: Border.all(color: const Color(0xffa67c52), width: 1.0),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _buildImageContainer(),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '$caffeine • $size',
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          color: Color(0xff42261d),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (time.isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xff6e3d2c),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            time,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // ✅ DELETE BUTTON - Simple like tracker page
+                IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xFFFF5151), // ✅ Red color
+                    size: 20,
+                  ),
+                  onPressed: () => _confirmDelete(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // ✅ Build image container that handles URLs, assets, and emojis
   Widget _buildImageContainer() {
-    // Check if it's a URL (network image)
     if (image.startsWith('http')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -116,9 +232,7 @@ class ConsumptionLogCard extends StatelessWidget {
           width: 50,
           height: 50,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildFallbackContainer();
-          },
+          errorBuilder: (context, error, stackTrace) => _buildFallbackContainer(),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
@@ -142,9 +256,7 @@ class ConsumptionLogCard extends StatelessWidget {
           },
         ),
       );
-    }
-    // Check if it's an asset path
-    else if (image.startsWith('assets/')) {
+    } else if (image.startsWith('assets/')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.asset(
@@ -152,14 +264,10 @@ class ConsumptionLogCard extends StatelessWidget {
           width: 50,
           height: 50,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildFallbackContainer();
-          },
+          errorBuilder: (context, error, stackTrace) => _buildFallbackContainer(),
         ),
       );
-    }
-    // Otherwise treat as emoji
-    else {
+    } else {
       return Container(
         width: 50,
         height: 50,
@@ -177,7 +285,6 @@ class ConsumptionLogCard extends StatelessWidget {
     }
   }
 
-  // ✅ Fallback container for failed image loads
   Widget _buildFallbackContainer() {
     return Container(
       width: 50,
