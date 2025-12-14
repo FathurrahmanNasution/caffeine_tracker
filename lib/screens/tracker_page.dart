@@ -1005,131 +1005,195 @@ class TrackerPageState extends State<TrackerPage> {
       );
     }
 
+    final totalCaffeine = todayConsumptions.fold<double>(
+      0.0,
+      (sum, log) => sum + log.caffeineContent,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        height: 200, // Fixed height for scrollable area
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: todayConsumptions.length,
-          itemBuilder: (context, index) {
-            final log = todayConsumptions[index];
-
-            return FutureBuilder<String>(
-              future: _getDrinkImage(log.drinkId),
-              builder: (context, imageSnapshot) {
-                final imageUrl = imageSnapshot.data ?? '☕';
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8DCC8),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Today\'s Drinks',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4B2C20),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF52796F),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${totalCaffeine.toStringAsFixed(1)}mg',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  child: Row(
-                    children: [
-                      // Drink Image
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.white,
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: imageUrl.startsWith('http')
-                              ? Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Center(
-                                      child: Text(
-                                        '☕',
-                                        style: TextStyle(fontSize: 24),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Center(
-                                  child: Text(
-                                    imageUrl,
-                                    style: const TextStyle(fontSize: 24),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(),
+              itemCount: todayConsumptions.length,
+              itemBuilder: (context, index) {
+                final log = todayConsumptions[index];
+
+                return FutureBuilder<String>(
+                  future: _getDrinkImage(log.drinkId),
+                  builder: (context, snapshot) {
+                    final imageUrl = snapshot.data ?? '☕';
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8DCC8),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          // Drink Image
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: imageUrl.startsWith('http')
+                                  ? Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const Center(
+                                              child: Text(
+                                                '☕',
+                                                style: TextStyle(fontSize: 24),
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : (imageUrl.startsWith('assets/')
+                                        ? Image.asset(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return const Center(
+                                                    child: Text(
+                                                      '☕',
+                                                      style: TextStyle(
+                                                        fontSize: 24,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                          )
+                                        : Center(
+                                            child: Text(
+                                              imageUrl,
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                              ),
+                                            ),
+                                          )),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Drink Details
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  log.drinkName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF4B2C20),
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Drink Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              log.drinkName,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4B2C20),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${log.caffeineContent.toStringAsFixed(0)}mg ~ ${log.servingSize}ml',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6E3D2C),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6E3D2C),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                DateFormat('hh:mm a').format(log.consumedAt),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${log.caffeineContent.toStringAsFixed(0)}mg ~ ${log.servingSize}ml',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF6E3D2C),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6E3D2C),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    DateFormat(
+                                      'hh:mm a',
+                                    ).format(log.consumedAt),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          // Delete Button
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Color(0xFF6E3D2C),
+                              size: 20,
+                            ),
+                            onPressed: () => _showDeleteDialog(log),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
                       ),
-                      // Delete Button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Color(0xFF6E3D2C),
-                          size: 20,
-                        ),
-                        onPressed: () => _showDeleteDialog(log),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -17,6 +17,8 @@ class DrinkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = context.responsive;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
       margin: EdgeInsets.only(
@@ -37,110 +39,157 @@ class DrinkCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Image Section
-          SizedBox(
-            height: r.adaptive(
-              mobile: r.wp(28.5),
-              tablet: r.wp(20),
-              desktop: r.wp(12),
-            ),
+          Expanded(
+            flex: isLandscape ? 5 : 6,
             child: Stack(
               children: [
                 Align(
                   alignment: Alignment.center,
                   child: drink.imageUrl.startsWith('http')
                       ? Image.network(
-                    drink.imageUrl,
-                    height: r.adaptive(
-                      mobile: r.wp(31),
-                      tablet: r.wp(21),
-                      desktop: r.wp(13),
-                    ),
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        "assets/images/coffee.png",
-                        height: r.adaptive(
-                          mobile: r.wp(22),
-                          tablet: r.wp(15),
-                          desktop: r.wp(10),
-                        ),
-                        fit: BoxFit.contain,
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                  )
+                          drink.imageUrl,
+                          height: isLandscape
+                              ? r.adaptive(
+                                  mobile: r.hp(8),
+                                  tablet: r.hp(10),
+                                  desktop: r.hp(12),
+                                )
+                              : r.adaptive(
+                                  mobile: r.wp(31),
+                                  tablet: r.wp(21),
+                                  desktop: r.wp(13),
+                                ),
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              "assets/images/coffee.png",
+                              height: isLandscape
+                                  ? r.adaptive(
+                                      mobile: r.hp(7),
+                                      tablet: r.hp(9),
+                                      desktop: r.hp(11),
+                                    )
+                                  : r.adaptive(
+                                      mobile: r.wp(22),
+                                      tablet: r.wp(15),
+                                      desktop: r.wp(10),
+                                    ),
+                              fit: BoxFit.contain,
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                        )
                       : Image.asset(
-                    drink.imageUrl,
-                    height: r.adaptive(
-                      mobile: r.wp(23),
-                      tablet: r.wp(18),
-                      desktop: r.wp(11),
-                    ),
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        "assets/images/coffee.png",
-                        height: r.adaptive(
-                          mobile: r.wp(21),
-                          tablet: r.wp(15),
-                          desktop: r.wp(10),
+                          drink.imageUrl,
+                          height: isLandscape
+                              ? r.adaptive(
+                                  mobile: r.hp(8),
+                                  tablet: r.hp(10),
+                                  desktop: r.hp(12),
+                                )
+                              : r.adaptive(
+                                  mobile: r.wp(23),
+                                  tablet: r.wp(18),
+                                  desktop: r.wp(11),
+                                ),
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              "assets/images/coffee.png",
+                              height: isLandscape
+                                  ? r.adaptive(
+                                      mobile: r.hp(7),
+                                      tablet: r.hp(9),
+                                      desktop: r.hp(11),
+                                    )
+                                  : r.adaptive(
+                                      mobile: r.wp(21),
+                                      tablet: r.wp(15),
+                                      desktop: r.wp(10),
+                                    ),
+                              fit: BoxFit.contain,
+                            );
+                          },
                         ),
-                        fit: BoxFit.contain,
-                      );
-                    },
-                  ),
                 ),
                 if (showFavoriteIcon)
                   Positioned(
-                    top: r.adaptive(mobile: 11, tablet: 14, desktop: 16),
-                    right: r.adaptive(mobile: 11, tablet: 14, desktop: 16),
+                    top: r.adaptive(
+                      mobile: isLandscape ? 4 : 11,
+                      tablet: 14,
+                      desktop: 16,
+                    ),
+                    right: r.adaptive(
+                      mobile: isLandscape ? 4 : 11,
+                      tablet: 14,
+                      desktop: 16,
+                    ),
                     child: Icon(
                       Icons.favorite,
                       color: Colors.red,
-                      size: r.sp(20),
+                      size: r.sp(isLandscape ? 16 : 20),
                     ),
                   ),
               ],
             ),
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: r.adaptive(mobile: 12, tablet: 14, desktop: 16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  drink.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: r.sp(14.3),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          // Text Section
+          Expanded(
+            flex: isLandscape ? 4 : 3,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: r.adaptive(
+                  mobile: isLandscape ? 6 : 12,
+                  tablet: 14,
+                  desktop: 16,
                 ),
-                SizedBox(height: 2),
-                Text(
-                  "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
-                  style: TextStyle(
-                    fontSize: r.sp(11.5),
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF6E3D2C),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    drink.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: r.sp(isLandscape ? 11 : 14.3),
+                    ),
+                    maxLines: isLandscape ? 1 : 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  SizedBox(height: isLandscape ? 1 : 2),
+                  Text(
+                    "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
+                    style: TextStyle(
+                      fontSize: r.sp(isLandscape ? 9 : 11.5),
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF6E3D2C),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ),
-          const Spacer(),
+          // Button Section
           Align(
             alignment: Alignment.bottomRight,
             child: IconButton(
               icon: Icon(
                 Icons.add_circle_outline,
-                size: r.sp(24),
+                size: r.sp(isLandscape ? 18 : 24),
                 color: const Color(0xFF4E8D7C),
               ),
               padding: EdgeInsets.zero,
@@ -148,7 +197,8 @@ class DrinkCard extends StatelessWidget {
               onPressed: onAddPressed,
             ),
           ),
-          SizedBox(height: r.adaptive(mobile: 4, tablet: 6, desktop: 8)),
+          if (!isLandscape)
+            SizedBox(height: r.adaptive(mobile: 4, tablet: 6, desktop: 8)),
         ],
       ),
     );
