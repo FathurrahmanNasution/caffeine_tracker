@@ -208,7 +208,7 @@ class ConsumptionLogCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(
                     Icons.close,
-                    color: Color(0xFFFF5151), // ✅ Red color
+                    color: Color.fromARGB(255, 0, 0, 0),
                     size: 20,
                   ),
                   onPressed: () => _confirmDelete(context),
