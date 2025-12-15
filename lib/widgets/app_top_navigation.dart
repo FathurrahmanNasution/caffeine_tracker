@@ -16,7 +16,6 @@ class AppTopNavigation extends StatelessWidget {
     this.showBackButton = false,
   });
 
-  // ✅ Add method to check if user is using Google authentication
   Future<bool> _isGoogleUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
@@ -30,7 +29,6 @@ class AppTopNavigation extends StatelessWidget {
     return false;
   }
 
-  // ✅ Add method to show Google account dialog
   void _showGoogleAccountDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -118,7 +116,6 @@ class AppTopNavigation extends StatelessWidget {
     );
   }
 
-  // ✅ Update method to check authProvider field
   Future<void> _handleChangePassword(BuildContext context) async {
     // Get current user's authProvider from Firestore
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -129,12 +126,12 @@ class AppTopNavigation extends StatelessWidget {
           .collection('users')
           .doc(userId)
           .get();
-      
+
       if (!userDoc.exists) return;
-      
+
       final userData = userDoc.data();
-      final authProvider = userData?['authProvider'] as String?; // ✅ Changed to 'authProvider'
-      
+      final authProvider = userData?['authProvider'] as String?;
+
       if (authProvider == 'google') {
         _showGoogleAccountDialog(context);
       } else {
@@ -149,7 +146,6 @@ class AppTopNavigation extends StatelessWidget {
   }
 
   Widget _buildProfileAvatar(UserModel? userProfile) {
-    // Jika ada photo URL, gunakan CachedNetworkImage
     if (userProfile?.photoUrl != null && userProfile!.photoUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: 20,
@@ -157,7 +153,7 @@ class AppTopNavigation extends StatelessWidget {
         child: ClipOval(
           child: CachedNetworkImage(
             imageUrl: userProfile.photoUrl!,
-            key: ValueKey(userProfile.photoUrl), // Force reload on URL change
+            key: ValueKey(userProfile.photoUrl),
             width: 40,
             height: 40,
             fit: BoxFit.cover,
@@ -202,9 +198,18 @@ class AppTopNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final height = size.height;
+    final orientation = MediaQuery.of(context).orientation;
     final auth = FirebaseAuth.instance;
     final authService = AuthService();
+
+    double logoHeight;
+    if (orientation == Orientation.landscape) {
+      logoHeight = size.height * 0.1;
+    } else {
+      logoHeight = size.height * 0.05;
+    }
+
+    logoHeight = logoHeight.clamp(35.0, 60.0);
 
     return Container(
       padding: EdgeInsets.only(
@@ -221,34 +226,34 @@ class AppTopNavigation extends StatelessWidget {
             width: 40,
             child: showBackButton
                 ? IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Color(0xFF42261D),
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                  )
+              icon: const Icon(
+                Icons.arrow_back_ios,
+                color: Color(0xFF42261D),
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+              padding: EdgeInsets.zero,
+            )
                 : const SizedBox(),
           ),
 
-          // Center: Logo
+          // Center: Logo with responsive sizing
           Expanded(
             child: Center(
               child: GestureDetector(
                 onTap: onLogoTap ??
-                    () {
+                        () {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/dashboard',
-                        (route) => false,
+                            (route) => false,
                       );
                     },
                 child: Image.asset(
                   "assets/images/coffee.png",
-                  height: height * 0.05,
+                  height: logoHeight,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.local_cafe, size: 40),
+                      Icon(Icons.local_cafe, size: logoHeight),
                 ),
               ),
             ),
@@ -402,7 +407,6 @@ class AppTopNavigation extends StatelessWidget {
                 },
                 onSelected: (String value) async {
                   if (value == 'change_password') {
-                    // ✅ Use the new handler method
                     await _handleChangePassword(context);
                   } else if (value == 'logout') {
                     await auth.signOut();

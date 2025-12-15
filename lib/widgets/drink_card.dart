@@ -23,7 +23,7 @@ class DrinkCard extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(
         right: r.adaptive(
-          mobile: isLandscape ? 4 : 8, // ✅ Reduced margin in landscape
+          mobile: isLandscape ? 4 : 8,
           tablet: 12,
           desktop: 14,
         ),
@@ -41,23 +41,23 @@ class DrinkCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // ✅ Changed from max to min
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Image Section
           Expanded(
-            flex: isLandscape ? 7 : 6, // ✅ Increased from 6 to 7
+            flex: isLandscape ? 7 : 6,
             child: Stack(
               children: [
-                Center( // ✅ Wrapped in Center instead of Align
+                Center(
                   child: Padding(
                     padding: EdgeInsets.all(
-                      isLandscape ? 4 : 8, // ✅ Added padding
+                      isLandscape ? 8 : 8,
                     ),
                     child: drink.imageUrl.startsWith('http')
                         ? Image.network(
                             drink.imageUrl,
                             height: isLandscape
-                                ? r.hp(20) // ✅ Increased from 16 to 20
+                                ? r.hp(20)
                                 : r.wp(20),
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
@@ -82,12 +82,12 @@ class DrinkCard extends StatelessWidget {
                           )
                         : Image.asset(
                             drink.imageUrl,
-                            height: isLandscape ? r.hp(10) : r.wp(20),
+                            height: isLandscape ? r.hp(18) : r.wp(20),
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(
                                 Icons.local_cafe,
-                                size: isLandscape ? r.hp(8) : r.wp(15),
+                                size: isLandscape ? r.hp(20) : r.wp(20),
                                 color: const Color(0xFF6E3D2C),
                               );
                             },
@@ -109,7 +109,7 @@ class DrinkCard extends StatelessWidget {
                     child: Icon(
                       Icons.favorite,
                       color: Colors.red,
-                      size: r.sp(isLandscape ? 14 : 18), // ✅ Smaller icon
+                      size: r.sp(isLandscape ? 18 : 18),
                     ),
                   ),
               ],
@@ -117,11 +117,11 @@ class DrinkCard extends StatelessWidget {
           ),
           // Text Section
           Expanded(
-            flex: isLandscape ? 3 : 3, // ✅ Reduced from 4 to 3
+            flex: isLandscape ? 3 : 3,
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: r.adaptive(
-                  mobile: isLandscape ? 6 : 10, // ✅ Increased from 2 to 6
+                  mobile: isLandscape ? 6 : 10,
                   tablet: 12,
                   desktop: 14,
                 ),
@@ -129,26 +129,26 @@ class DrinkCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min, // ✅ Added
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     drink.name,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: r.sp(isLandscape ? 11 : 13), // ✅ Reduced from 12 to 11
-                      height: isLandscape ? 1.0 : null, // ✅ Back to tight line height
+                      fontSize: r.sp(isLandscape ? 11 : 13),
+                      height: isLandscape ? 2.0 : null,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: isLandscape ? 1 : 2), // ✅ Reduced spacing from 2 to 1
+                  SizedBox(height: isLandscape ? 1 : 2),
                   Text(
                     "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
                     style: TextStyle(
-                      fontSize: r.sp(isLandscape ? 9 : 10.5), // ✅ Reduced from 10 to 9
+                      fontSize: r.sp(isLandscape ? 9 : 10.5),
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF6E3D2C),
-                      height: isLandscape ? 1.0 : null, // ✅ Back to tight line height
+                      height: isLandscape ? 1.0 : null,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -161,14 +161,14 @@ class DrinkCard extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(
               right: 4,
-              bottom: isLandscape ? 0 : 4, // No bottom padding in landscape
+              bottom: isLandscape ? 0 : 4,
             ),
             child: Align(
               alignment: Alignment.bottomRight,
               child: IconButton(
                 icon: Icon(
                   Icons.add_circle_outline,
-                  size: r.sp(isLandscape ? 18 : 20), // ✅ Increased from 16 to 18
+                  size: r.sp(isLandscape ? 18 : 20),
                   color: const Color(0xFF4E8D7C),
                 ),
                 padding: EdgeInsets.zero,

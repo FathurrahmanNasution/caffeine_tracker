@@ -71,10 +71,10 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: isLandscape ? 2 : r.mediumSpacing),
+                        SizedBox(height: isLandscape ? 32 : r.mediumSpacing),
                         // Search Bar
                         _buildSearchBar(r),
-                        SizedBox(height: isLandscape ? 2 : r.mediumSpacing),
+                        SizedBox(height: isLandscape ? 24 : r.mediumSpacing),
                         // Your Favorites Title
                         Padding(
                           padding: const EdgeInsets.only(left: 8),
@@ -87,10 +87,10 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                             ),
                           ),
                         ),
-                        SizedBox(height: isLandscape ? 1 : r.smallSpacing),
+                        SizedBox(height: isLandscape ? 5 : r.smallSpacing),
                         // Favorites Section
                         _buildFavoritesSection(r, isLandscape),
-                        SizedBox(height: isLandscape ? 2 : r.mediumSpacing),
+                        SizedBox(height: isLandscape ? 24 : r.mediumSpacing),
                         // All Drinks Title
                         Padding(
                           padding: const EdgeInsets.only(left: 8),
@@ -103,7 +103,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                             ),
                           ),
                         ),
-                        SizedBox(height: isLandscape ? 1 : r.smallSpacing),
+                        SizedBox(height: isLandscape ? 5 : r.smallSpacing),
                         // All Drinks Section - No longer Expanded
                         _buildAllDrinksSection(r, isLandscape),
                       ],
