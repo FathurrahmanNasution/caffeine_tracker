@@ -135,17 +135,17 @@ class DrinkCard extends StatelessWidget {
                     drink.name,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: r.sp(isLandscape ? 11 : 13),
-                      height: isLandscape ? 2.0 : null,
+                      fontSize: r.sp(isLandscape ? 10 : 13),
+                      height: isLandscape ? 1.7 : null,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: isLandscape ? 1 : 2),
+                  SizedBox(height: isLandscape ? 0 : 2),
                   Text(
                     "${drink.caffeineinMg}mg ~ ${drink.standardVolume}mL",
                     style: TextStyle(
-                      fontSize: r.sp(isLandscape ? 9 : 10.5),
+                      fontSize: r.sp(isLandscape ? 8 : 10.5),
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF6E3D2C),
                       height: isLandscape ? 1.0 : null,
