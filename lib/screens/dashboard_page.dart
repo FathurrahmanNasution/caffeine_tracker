@@ -511,25 +511,26 @@ class DashboardPageState extends State<DashboardPage> {
                         todayCaffeine = _calculateTotalCaffeine(snapshot.data!);
                       }
 
-                      return Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 24,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getCaffeineColor(todayCaffeine),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 24,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getCaffeineColor(todayCaffeine),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Icon(
                                 _getCaffeineIcon(todayCaffeine),
@@ -541,7 +542,7 @@ class DashboardPageState extends State<DashboardPage> {
                                 child: Text(
                                   _getCaffeineMessage(todayCaffeine),
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
@@ -550,8 +551,8 @@ class DashboardPageState extends State<DashboardPage> {
                               ),
                             ],
                           ),
-                        ),
-                      );
+                        );
+
                     },
                   ),
                   const SizedBox(height: 15),
