@@ -45,16 +45,19 @@ class ConsumptionForm extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              "Enter serving size",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF42261D),
+            const Flexible( // ✅ Wrapped in Flexible
+              child: Text(
+                "Enter serving size",
+                style: TextStyle(
+                  fontSize: 16, // ✅ Reduced from 18 to 16
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF42261D),
+                ),
               ),
             ),
+            const SizedBox(width: 8), // ✅ Added spacing
             Container(
-              width: width * 0.37,
+              width: width * 0.45, // ✅ Increased from 0.40 to 0.45
               padding: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 border: Border.all(
@@ -89,7 +92,10 @@ class ConsumptionForm extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Text("mL", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text("mL", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.add),
                     onPressed: onIncrement,
