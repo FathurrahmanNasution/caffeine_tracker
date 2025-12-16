@@ -122,10 +122,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
         icon: const Icon(Icons.add_circle_outline, color: Colors.white),
         label: const Text(
           'Add Others',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -185,14 +182,13 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
   }
 
   Widget _buildFavoritesSection(Responsive r, bool isLandscape) {
-    // ✅ Simplified height calculation
     final height = isLandscape
-        ? r.hp(40) // ✅ Increased from 35 to 40 for much bigger images
+        ? r.hp(38)
         : r.adaptive(
-            mobile: r.hp(22),
-            tablet: r.hp(24),
-            desktop: r.hp(26),
-          );
+            mobile: r.hp(21),
+            tablet: r.hp(22),
+            desktop: r.hp(24),
+          ); // Slightly reduced mobile
 
     if (currentUserId.isEmpty) {
       return SizedBox(
@@ -246,23 +242,31 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
 
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(vertical: 4), // ✅ Added padding
+            padding: EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: isLandscape
+                  ? 0
+                  : 0, // Add small vertical padding in portrait
+            ),
             itemCount: favorites.length,
             itemBuilder: (context, index) {
               final drink = favorites[index];
+              final isLastItem = index == favorites.length - 1;
+
               return Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: EdgeInsets.only(right: isLastItem ? 0 : 8),
                 child: SizedBox(
                   width: isLandscape
-                      ? r.wp(18) // ✅ Increased from 15 to 18 for easier scrolling
+                      ? r.wp(16)
                       : r.adaptive(
-                          mobile: r.wp(28),
-                          tablet: r.wp(22),
-                          desktop: r.wp(16),
+                          mobile: r.wp(26),
+                          tablet: r.wp(20),
+                          desktop: r.wp(14),
                         ),
                   child: DrinkCard(
                     drink: drink,
                     showFavoriteIcon: true,
+                    isFavoritesList: true,
                     onAddPressed: () async {
                       final result = await Navigator.pushNamed(
                         context,
@@ -290,7 +294,10 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
         child: Center(
           child: Text(
             "Please log in to view drinks",
-            style: TextStyle(color: const Color(0xFF6E3D2C), fontSize: r.sp(14)),
+            style: TextStyle(
+              color: const Color(0xFF6E3D2C),
+              fontSize: r.sp(14),
+            ),
           ),
         ),
       );
@@ -319,10 +326,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
                     const SizedBox(height: 16),
                     Text(
                       "Error loading drinks",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: r.sp(14),
-                      ),
+                      style: TextStyle(color: Colors.red, fontSize: r.sp(14)),
                     ),
                   ],
                 ),
@@ -357,7 +361,7 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
 
         final crossAxisCount = r.gridCrossAxisCount(
           mobile: isLandscape ? 4 : 3, // ✅ Reduced from 5 to 4
-          tablet: isLandscape ? 5 : 4,  // ✅ Reduced from 6 to 5
+          tablet: isLandscape ? 5 : 4, // ✅ Reduced from 6 to 5
           desktop: 6,
         );
 
