@@ -1,5 +1,6 @@
 import 'package:caffeine_tracker/widgets/consumption_form.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/services/consumption_service.dart';
 import 'package:caffeine_tracker/model/consumption_log.dart';
@@ -98,7 +99,9 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
           isLoadingDrink = false;
         });
       }
-      print('Error loading drink details: $e');
+      if (kDebugMode) {
+        debugPrint('Error loading drink details: $e');
+      }
     }
   }
 
@@ -189,7 +192,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
       },
     );
 
-    if (selectedDate != null) {
+    if (selectedDate != null && mounted) {
       final TimeOfDay? selectedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(selectedDateTime),
@@ -207,7 +210,7 @@ class _DrinkinformationPageState extends State<DrinkinformationPage> {
         },
       );
 
-      if (selectedTime != null) {
+      if (selectedTime != null && mounted) {
         setState(() {
           selectedDateTime = DateTime(
             selectedDate.year,

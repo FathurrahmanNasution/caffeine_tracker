@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
+import 'dart:developer' as developer;
 
 class AdminDrinkService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -48,7 +49,7 @@ class AdminDrinkService {
       }
     } catch (e) {
       // If error occurs, just log it (don't block the main delete operation)
-      print('Error cleaning up favorites: $e');
+      developer.log('Error cleaning up favorites: $e', name: 'AdminDrinkService');
     }
   }
 
@@ -61,7 +62,7 @@ class AdminDrinkService {
       }
       return null;
     } catch (e) {
-      print('Error getting drink: $e');
+      developer.log('Error getting drink: $e', name: 'AdminDrinkService');
       return null;
     }
   }

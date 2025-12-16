@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:flutter/foundation.dart';
 
 class DrinkService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -42,7 +43,7 @@ class DrinkService {
       }
       return null;
     } catch (e) {
-      print('Error getting drink by ID: $e');
+      debugPrint('Error getting drink by ID: $e');
       return null;
     }
   }

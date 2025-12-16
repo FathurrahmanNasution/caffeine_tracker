@@ -121,7 +121,7 @@ class CaffeineChartPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final fillPaint = Paint()
-      ..color = Colors.brown[300]!.withOpacity(0.3)
+      ..color = Colors.brown[300]!.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     final gridPaint = Paint()

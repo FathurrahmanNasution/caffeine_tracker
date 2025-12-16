@@ -67,7 +67,7 @@ class ConsumptionLogCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD5BBA2).withOpacity(0.3),
+                    color: const Color(0xFFD5BBA2).withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(

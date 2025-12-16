@@ -96,7 +96,7 @@ class DashboardPageState extends State<DashboardPage> {
 
   // Calculate total caffeine for today
   double _calculateTotalCaffeine(List<ConsumptionLog> logs) {
-    return logs.fold(0.0, (sum, log) => sum + log.caffeineContent);
+    return logs.fold(0.0, (total, log) => total + log.caffeineContent);
   }
 
   // Get message based on caffeine intake
@@ -207,7 +207,7 @@ class DashboardPageState extends State<DashboardPage> {
       context: context,
       builder: (BuildContext context) {
         double totalCaffeine =
-            drinks.fold(0, (sum, d) => sum + d.caffeineContent);
+            drinks.fold(0.0, (total, d) => total + d.caffeineContent);
 
         return AlertDialog(
           backgroundColor: const Color(0xFFD6CCC2),
@@ -522,37 +522,36 @@ class DashboardPageState extends State<DashboardPage> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _getCaffeineIcon(todayCaffeine),
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Text(
-                                  _getCaffeineMessage(todayCaffeine),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _getCaffeineIcon(todayCaffeine),
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: Text(
+                                _getCaffeineMessage(todayCaffeine),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                            ],
-                          ),
-                        );
-
+                            ),
+                          ],
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 15),

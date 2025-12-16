@@ -259,7 +259,7 @@ class _SignInPageState extends State<SignInPage> {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -332,17 +332,21 @@ class _SignInPageState extends State<SignInPage> {
       if (user != null) {
         // Get user profile to check admin status
         final userDoc = await _auth.getProfileDoc(user.uid);
+        if (!mounted) return;
+        
         final userData = userDoc.data();
         final isAdmin = userData?['isAdmin'] as bool? ?? false;
         
         // Check if admin
         if (isAdmin) {
           // Redirect to admin dashboard
+          if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/admin-dashboard');
         } else {
           // Check if regular user has completed onboarding
           final hasCompletedOnboarding = userData?['hasCompletedOnboarding'] ?? false;
           
+          if (!mounted) return;
           if (hasCompletedOnboarding) {
             Navigator.pushReplacementNamed(context, '/dashboard');
           } else {
@@ -370,9 +374,12 @@ class _SignInPageState extends State<SignInPage> {
       if (user != null) {
         // Check if user has completed onboarding
         final userDoc = await _auth.getProfileDoc(user.uid);
+        if (!mounted) return;
+        
         final hasCompletedOnboarding =
             userDoc.data()?['hasCompletedOnboarding'] ?? false;
 
+        if (!mounted) return;
         if (hasCompletedOnboarding) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         } else {

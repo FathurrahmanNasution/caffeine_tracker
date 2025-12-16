@@ -134,28 +134,28 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16), // ✅ Reduced padding
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           title: Row(
             children: [
               Icon(
                 Icons.check_circle_outline,
                 color: Colors.green[700],
-                size: 24, // ✅ Smaller icon
+                size: 24,
               ),
               const SizedBox(width: 10),
-              const Expanded( // ✅ Make responsive
+              const Expanded(
                 child: Text(
                   'Reset Email Sent',
                   style: TextStyle(
                     color: Color(0xFF42261D),
                     fontWeight: FontWeight.bold,
-                    fontSize: 18, // ✅ Smaller font
+                    fontSize: 18,
                   ),
                 ),
               ),
             ],
           ),
-          content: SingleChildScrollView( // ✅ Make scrollable
+          content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,14 +164,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   'We have sent a password reset link to:',
                   style: TextStyle(
                     color: Color(0xFF6E3D2C),
-                    fontSize: 13, // ✅ Smaller font
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.all(10), // ✅ Reduced padding
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD5BBA2).withOpacity(0.3),
+                    color: const Color(0xFFD5BBA2).withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -576,7 +576,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

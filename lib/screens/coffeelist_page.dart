@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:caffeine_tracker/model/drink_model.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/widgets/drink_card.dart';
@@ -23,12 +24,16 @@ class _CoffeeListPageState extends State<CoffeeListPage> {
   @override
   void initState() {
     super.initState();
-    print("CoffeeListPage initialized");
-    print("Current User ID: $currentUserId");
+    if (kDebugMode) {
+      debugPrint("CoffeeListPage initialized");
+      debugPrint("Current User ID: $currentUserId");
+    }
 
     // Check if user is logged in
     if (currentUserId.isEmpty) {
-      print("WARNING: No user logged in!");
+      if (kDebugMode) {
+        debugPrint("WARNING: No user logged in!");
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

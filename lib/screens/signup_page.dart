@@ -261,7 +261,7 @@ class _SignUpPageState extends State<SignUpPage> {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -380,8 +380,11 @@ Future<void> _handleSignUp() async {
       if (user != null) {
         // Check if user has completed onboarding
         final userDoc = await _auth.getProfileDoc(user.uid);
+        if (!mounted) return;
+        
         final hasCompletedOnboarding = userDoc.data()?['hasCompletedOnboarding'] ?? false;
         
+        if (!mounted) return;
         if (hasCompletedOnboarding) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         } else {

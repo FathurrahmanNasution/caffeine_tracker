@@ -1,7 +1,6 @@
 import 'package:caffeine_tracker/model/consumption_log.dart';
 import 'package:caffeine_tracker/services/drink_service.dart';
 import 'package:caffeine_tracker/widgets/app_top_navigation.dart';
-import 'package:caffeine_tracker/widgets/consumption_log_card.dart';
 import 'package:caffeine_tracker/widgets/caffeine_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -679,18 +678,6 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  Future<void> _editConsumption(ConsumptionLog log) async {
-    final result = await Navigator.pushNamed(
-      context,
-      '/drinkinformation',
-      arguments: log,
-    );
-
-    if (result == true && mounted) {
-      await _loadConsumptions();
-    }
-  }
-
   Future<void> _deleteConsumption(String consumptionId) async {
     try {
       await _firestore.collection('consumptions').doc(consumptionId).delete();
@@ -995,9 +982,9 @@ class TrackerPageState extends State<TrackerPage> {
           height: 150,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFD5BBA2).withOpacity(0.3),
+            color: const Color(0xFFD5BBA2).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFA67C52).withOpacity(0.3)),
+            border: Border.all(color: const Color(0xFFA67C52).withValues(alpha: 0.3)),
           ),
           child: const Center(
             child: Column(
@@ -1020,11 +1007,6 @@ class TrackerPageState extends State<TrackerPage> {
         ),
       );
     }
-
-    final totalCaffeine = todayConsumptions.fold<double>(
-      0.0,
-      (sum, log) => sum + log.caffeineContent,
-    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1067,7 +1049,7 @@ class TrackerPageState extends State<TrackerPage> {
                             border: Border.all(color: const Color(0xFFA67C52)),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),

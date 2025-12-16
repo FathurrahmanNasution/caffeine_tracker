@@ -98,13 +98,13 @@ class _AddotherdrinkPageState extends State<AddotherdrinkPage> {
       lastDate: DateTime(2030),
     );
 
-    if (selectedDate != null) {
+    if (selectedDate != null && mounted) {
       final TimeOfDay? selectedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(selectedDateTime),
       );
 
-      if (selectedTime != null) {
+      if (selectedTime != null && mounted) {
         setState(() {
           selectedDateTime = DateTime(
             selectedDate.year,

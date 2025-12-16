@@ -16,19 +16,6 @@ class AppTopNavigation extends StatelessWidget {
     this.showBackButton = false,
   });
 
-  Future<bool> _isGoogleUser() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return false;
-
-    // Check if user has Google as a provider
-    for (var provider in user.providerData) {
-      if (provider.providerId == 'google.com') {
-        return true;
-      }
-    }
-    return false;
-  }
-
   void _showGoogleAccountDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -132,6 +119,8 @@ class AppTopNavigation extends StatelessWidget {
       final userData = userDoc.data();
       final authProvider = userData?['authProvider'] as String?;
 
+      if (!context.mounted) return;
+
       if (authProvider == 'google') {
         _showGoogleAccountDialog(context);
       } else {
@@ -141,6 +130,7 @@ class AppTopNavigation extends StatelessWidget {
       if (kDebugMode) {
         debugPrint('Error checking authProvider: $e');
       }
+      if (!context.mounted) return;
       Navigator.pushNamed(context, '/change-password');
     }
   }

@@ -138,7 +138,7 @@ class _ManageDrinksPageState extends State<ManageDrinksPage> {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 90,
               height: 90,
               child: drink.imageUrl.startsWith('http')

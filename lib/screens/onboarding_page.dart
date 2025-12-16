@@ -164,7 +164,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           shape: BoxShape.circle,
                           color: _currentIndex >= index
                               ? const Color(0xFF471D12)
-                              : const Color(0xFF4A3428).withOpacity(0.3),
+                              : const Color(0xFF4A3428).withValues(alpha: 0.3),
                         ),
                         child: Center(
                           child: Container(
@@ -210,7 +210,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 .doc(user.uid)
                                 .update({'hasCompletedOnboarding': true});
                           }
-                          if (mounted) {
+                          if (context.mounted) {
                             Navigator.pushReplacementNamed(
                               context,
                               '/dashboard',
