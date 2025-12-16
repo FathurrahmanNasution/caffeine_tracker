@@ -44,12 +44,12 @@ Think of it as your **personal caffeine journal** in your pocket—always access
 ## 📱 Screenshots
 
 <div align="center">
-  <img src="screenshots/Sign up.png" width="200" alt="Sign Up Screen"/>
-  <img src="screenshots/Sign in.png" width="200" alt="Sign In Screen"/>
-  <img src="screenshots/Dashboard.png" width="200" alt="Dashboard Screen"/>
-  <img src="screenshots/Drink list.png" width="200" alt="Coffee List"/>
+  <img src="screenshots/Sign up.jpg" width="200" alt="Sign Up Screen"/>
+  <img src="screenshots/Sign in.jpg" width="200" alt="Sign In Screen"/>
+  <img src="screenshots/Dashboard.jpg" width="200" alt="Dashboard Screen"/>
+  <img src="screenshots/Drink list.jpg" width="200" alt="Coffee List"/>
   <img src="screenshots/tracker_screen.png" width="200" alt="Tracker Analytics"/>
-  <img src="screenshots/Profile.png" width="200" alt="Profile"/>
+  <img src="screenshots/Profile.jpg" width="200" alt="Profile"/>
 </div>
 
 *Track your drinks, view weekly analytics, explore coffee database, and customize your profile—all with a beautiful brown-themed interface.*
