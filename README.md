@@ -27,6 +27,7 @@
 
 **Universitas Sumatera Utara**  
 **Mata Kuliah:** Pemrograman Mobile  
+**Dosen Pengampu:** Nurrahmadayeni, M.Kom dan Hayatunnufus, S.Kom., M.Cs
 **Asisten Lab:** Rivaldo Dominggos Pardede, Frederick Godiva
 
 </div>
@@ -46,23 +47,14 @@ Think of it as your **personal caffeine journal** in your pocket—always access
 <div align="center">
   <img src="screenshots/Sign up.jpg" width="200" alt="Sign Up Screen"/>
   <img src="screenshots/Sign in.jpg" width="200" alt="Sign In Screen"/>
-  <img src="screenshots/Dashboard.jpg" width="200" alt="Dashboard Screen"/>
-  <img src="screenshots/Drink list.jpg" width="200" alt="Coffee List"/>
-  <img src="screenshots/tracker_screen.png" width="200" alt="Tracker Analytics"/>
-  <img src="screenshots/Profile.jpg" width="200" alt="Profile"/>
+  <img src="screenshots/dashboard.jpg" width="200" alt="Dashboard Screen"/>
+  <img src="screenshots/drinklist.jpg" width="200" alt="Coffee List"/>
+  <img src="screenshots/drinkinformation.jpg" width="200" alt="Drink Information"/>
+  <img src="screenshots/trackerscreen.png" width="200" alt="Tracker Analytics"/>
+  <img src="screenshots/profile.jpg" width="200" alt="Profile"/>
 </div>
 
 *Track your drinks, view weekly analytics, explore coffee database, and customize your profile—all with a beautiful brown-themed interface.*
-
----
-
-## 🎥 Demo Aplikasi
-
-<div align="center"> 
-
-🔗 [Your Drive Link Here]
-
-</div>
 
 ---
 
@@ -201,109 +193,9 @@ Think of it as your **personal caffeine journal** in your pocket—always access
 
 ---
 
-## 📂 Project Structure
-
-```
-caffeine_tracker/
-├── lib/
-│   ├── model/              # Data models
-│   │   ├── user_model.dart
-│   │   ├── consumption_log.dart
-│   │   └── drink_model.dart
-│   ├── pages/              # Screen pages
-│   │   ├── dashboard_page.dart
-│   │   ├── tracker_page.dart
-│   │   ├── coffee_list_page.dart
-│   │   └── profile_page.dart
-│   ├── services/           # Business logic
-│   │   ├── auth_service.dart
-│   │   ├── consumption_service.dart
-│   │   └── drink_service.dart
-│   ├── widgets/            # Reusable components
-│   │   ├── caffeine_chart.dart
-│   │   ├── consumption_log_card.dart
-│   │   └── app_bottom_navigation.dart
-│   └── main.dart           # Entry point
-├── assets/
-│   ├── images/
-│   └── fonts/
-└── pubspec.yaml
-```
-
----
-
-## 🔥 Firebase Configuration
-
-### **Collections Structure**
-
-#### **users**
-```json
-{
-  "userId": "string",
-  "username": "string",
-  "displayName": "string",
-  "email": "string",
-  "profilePicture": "string (URL)",
-  "createdAt": "timestamp"
-}
-```
-
-#### **drinks**
-```json
-{
-  "drinkId": "string",
-  "name": "string",
-  "category": "string",
-  "caffeineContent": "number (mg per 100ml)",
-  "defaultServingSize": "number (ml)",
-  "description": "string",
-  "imageUrl": "string"
-}
-```
-
-#### **consumptions**
-```json
-{
-  "consumptionId": "string",
-  "userId": "string",
-  "drinkId": "string",
-  "drinkName": "string",
-  "servingSize": "number (ml)",
-  "caffeineContent": "number (mg)",
-  "consumedAt": "timestamp (ISO 8601)"
-}
-```
-
----
-
-## 🎨 Design Features
-
-- 🎨 **Brown Color Theme**: Warm, coffee-inspired color palette
-- 📱 **Responsive Design**: Optimized for various screen sizes
-- 🌙 **Consistent UI**: Unified design language across all screens
-- ✨ **Smooth Animations**: Fluid transitions and interactions
-- 📊 **Custom Charts**: Interactive data visualization
-- 🎯 **Intuitive Navigation**: Easy-to-use bottom navigation
-
----
-
-## 🚀 Future Enhancements
-
-- [ ] Dark mode support
-- [ ] Push notifications for caffeine limit warnings
-- [ ] Social features (share achievements)
-- [ ] Advanced analytics (sleep impact tracking)
-- [ ] Custom drink creation
-- [ ] Export data to CSV/PDF
-- [ ] Multi-language support
-- [ ] Caffeine calculator for custom drinks
-- [ ] Integration with health apps
-- [ ] Widget for home screen
-
----
-
 ## 🙏 Acknowledgments
 
+- **Bu Yeni and Bu Uun** - For the insightful guide and material throughout the semester
 - **Bang Paldo dan Bang Frederick** - For the guidance and mentorship throughout the semester
 - **Lab 3 and Lab 4 Classmates** - For continuous support and collaboration
 - **IKLC Team** - For providing excellent learning materials and comprehensive teaching modules
@@ -316,7 +208,7 @@ caffeine_tracker/
 <div align="center">
 
 [![GitHub](https://img.shields.io/badge/GitHub-FathurrahmanNasution-181717?style=for-the-badge&logo=github)](https://github.com/FathurrahmanNasution)
-[![Email](https://img.shields.io/badge/Email-Contact-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:your.email@students.usu.ac.id)
+[![Email](https://img.shields.io/badge/Email-Contact-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:clarissahalim@students.usu.ac.id)
 
 </div>
 
