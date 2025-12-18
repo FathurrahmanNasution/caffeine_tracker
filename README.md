@@ -1,3 +1,5 @@
+SRS: https://docs.google.com/document/d/1CaZc3NtyLggTXHgwtQY7zr33kS_VvH4k51FBMoCR_OY/edit?tab=t.0 
+
 <div align="center">
 
 # ☕ Caffeine Tracker
@@ -39,6 +41,7 @@
 **Caffeine Tracker** is a modern mobile application built with Flutter that helps you monitor and manage your daily caffeine consumption. With seamless Firebase integration, track your coffee, tea, energy drinks, and other caffeinated beverages with real-time synchronization across devices.
 
 Think of it as your **personal caffeine journal** in your pocket—always accessible, beautifully designed, and packed with insightful analytics.
+
 
 ---
 
