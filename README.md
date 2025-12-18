@@ -45,8 +45,8 @@ Think of it as your **personal caffeine journal** in your pocket—always access
 ## 📱 Screenshots
 
 <div align="center">
-  <img src="screenshots/Sign up.jpg" width="200" alt="Sign Up Screen"/>
-  <img src="screenshots/Sign in.jpg" width="200" alt="Sign In Screen"/>
+  <img src="screenshots/signup.png" width="200" alt="Sign Up Screen"/>
+  <img src="screenshots/signin.png" width="200" alt="Sign In Screen"/>
   <img src="screenshots/dashboard.png" width="200" alt="Dashboard Screen"/>
   <img src="screenshots/drinklist.png" width="200" alt="Coffee List"/>
   <img src="screenshots/drinkinformation.png" width="200" alt="Drink Information"/>
